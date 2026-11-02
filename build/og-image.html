@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- Renders the social-sharing preview image (1200 x 630).
+     Regenerate with: python3 build/make_og_image.py  (needs Playwright) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../site/assets/css/atlas.css">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #fff; }
+  .og { position: relative; width: 1200px; height: 630px; padding: 58px 64px 0; box-sizing: border-box; }
+  .og .brand { margin-bottom: 34px; }
+  .og .brand-name { font-size: 24px; }
+  .og .brand-sub { font-size: 14px; }
+  .og h1 { font-family: var(--serif); font-weight: 380; font-size: 60px; line-height: 1.02; letter-spacing: -0.024em; color: var(--ink); margin: 0; max-width: 15.5em; }
+  .og p { font-size: 20px; color: var(--ink-2); margin: 20px 0 0; }
+  .og-field { position: absolute; left: 64px; right: 64px; bottom: 54px; display: flex; flex-wrap: wrap; gap: 6px 3px; }
+  .og-field .sig { grid-template-rows: repeat(3, 8px); width: 8px; cursor: default; }
+  .og-rule { position: absolute; left: 64px; right: 64px; bottom: 236px; border-top: 1px solid var(--rule); }
+</style>
+</head>
+<body>
+  <div class="og">
+    <span class="brand">
+      <span class="brand-mark" aria-hidden="true"><i class="q-High"></i><i class="q-Adequate"></i><i class="q-Poor"></i></span>
+      <span class="brand-text"><span class="brand-name">Benchmark Atlas</span><span class="brand-sub">LLM benchmarks in mental health</span></span>
+    </span>
+    <h1>Benchmarks for evaluating large language models in mental health</h1>
+    <p id="og-sub"></p>
+    <div class="og-field" id="og-field"></div>
+  </div>
+  <script src="../site/assets/data/atlas-data.js"></script>
+  <script>
+    const D = window.ATLAS_DATA;
+    const R = { High: 0, Adequate: 1, Poor: 2, NR: 3, NA: 4 };
+    const counts = {};
+    D.benchmarks.forEach(b => counts[b.purpose] = (counts[b.purpose] || 0) + 1);
+    const order = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    const items = D.benchmarks.slice().sort((a, b) =>
+      order.indexOf(a.purpose) - order.indexOf(b.purpose) || R[a.q.input.r] - R[b.q.input.r] || R[a.q.ref.r] - R[b.q.ref.r] || R[a.q.scoring.r] - R[b.q.scoring.r]);
+    const f = document.getElementById('og-field');
+    for (const b of items) {
+      const s = document.createElement('span'); s.className = 'sig';
+      for (const k of ['input', 'ref', 'scoring']) { const i = document.createElement('i'); i.className = 'q-' + b.q[k].r; s.appendChild(i); }
+      f.appendChild(s);
+    }
+    document.getElementById('og-sub').textContent = D.benchmarks.length + ' benchmarks from ' + D.studies.length + ' studies, each appraised for the quality of its inputs, reference standard, and scoring.';
+  </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benchmark Atlas: LLM benchmarks in mental health</title>
+  <meta name="description" content="An interactive companion to a systematic review of 433 studies and the 453 benchmarks used to evaluate generative large language models in mental health, with quality ratings for every benchmark.">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Benchmark Atlas: LLM benchmarks in mental health">
+  <meta property="og:description" content="Explore 453 benchmarks used to evaluate generative AI in mental health, appraised for the quality of their inputs, reference standards, and scoring.">
+  <meta property="og:image" content="assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <script>
+    // Preload the two main fonts when served over the web (preloading is blocked for local files).
+    if (location.protocol.indexOf("http") === 0) {
+      ["public-sans-latin-wght-normal", "newsreader-latin-opsz-normal"].forEach(function (f) {
+        var l = document.createElement("link");
+        l.rel = "preload"; l.as = "font"; l.type = "font/woff2"; l.crossOrigin = "anonymous";
+        l.href = "assets/fonts/" + f + ".woff2";
+        document.head.appendChild(l);
+      });
+    }
+  </script>
+  <link rel="stylesheet" href="assets/css/atlas.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="hdr">
+      <a class="brand" href="#/">
+        <span class="brand-mark" aria-hidden="true"><i class="q-High"></i><i class="q-Adequate"></i><i class="q-Poor"></i></span>
+        <span class="brand-text">
+          <span class="brand-name">Benchmark Atlas</span>
+          <span class="brand-sub">LLM benchmarks in mental health</span>
+        </span>
+      </a>
+      <button class="icon-btn nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="Menu">
+        <svg class="icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/></svg>
+      </button>
+      <nav class="site-nav" id="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="#/" data-page="overview">Overview</a></li>
+          <li><a href="#/benchmarks" data-page="benchmarks">Benchmarks</a></li>
+          <li><a href="#/studies" data-page="studies">Studies</a></li>
+          <li><a href="#/methods" data-page="methods">Methods</a></li>
+          <li><a href="#/about" data-page="about">About</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <noscript>
+      <div class="wrap notfound">
+        <h1 class="doc-title">This atlas needs JavaScript</h1>
+        <p>Turn on JavaScript to filter and chart the benchmarks, or download the data directly:
+          <a href="downloads/benchmarks.csv">benchmarks (CSV)</a>,
+          <a href="downloads/studies.csv">studies (CSV)</a>,
+          <a href="downloads/atlas-workbook.xlsx">original workbook (Excel)</a>.</p>
+      </div>
+    </noscript>
+  </main>
+
+  <footer class="site-footer">
+    <div class="foot">
+      <div>
+        <a class="brand" href="#/">
+          <span class="brand-mark" aria-hidden="true"><i class="q-High"></i><i class="q-Adequate"></i><i class="q-Poor"></i></span>
+          <span class="brand-text"><span class="brand-name">Benchmark Atlas</span></span>
+        </a>
+        <p>A companion to the systematic review <em>Benchmarks for Evaluating Generative Large Language Models in Mental Health</em> by Matthews, Mudambi, Yu, Torous, Suh, Nagata, Pataranutaporn, Cantor, and McBain.</p>
+        <p id="foot-version"></p>
+      </div>
+      <div>
+        <p class="foot-h">Explore</p>
+        <ul>
+          <li><a href="#/benchmarks">Benchmarks</a></li>
+          <li><a href="#/studies">Studies</a></li>
+          <li><a href="#/methods">Methods and definitions</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="foot-h">Data</p>
+        <ul>
+          <li><a href="#/about/downloads">Download the data</a></li>
+          <li><a href="#/about/cite">How to cite</a></li>
+          <li><a href="#/about/corrections">Report a correction</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <div id="drawer-root"></div>
+  <div id="tooltip" role="tooltip" hidden></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="assets/data/atlas-data.js"></script>
+  <script src="assets/js/core.js"></script>
+  <script src="assets/js/model.js"></script>
+  <script src="assets/js/charts.js"></script>
+  <script src="assets/js/explorer.js"></script>
+  <script src="assets/js/explorers.js"></script>
+  <script src="assets/js/drawer.js"></script>
+  <script src="assets/js/pages.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+Mental Health LLM Benchmark Atlas: data build report
+Built: 2026-11-02 14:46
+Workbook: benchmark and study supplementary tables 11.2.xlsx
+Workbook last saved: 2026-11-02T14:49:48Z
+Sheets: eTable 2 Benchmarks, eTable 3 Included studies
+
+Benchmark rows: 453   Study rows: 433
+Footnotes captured: 1 (benchmarks), 1 (studies)
+
+LINKS BETWEEN SHEETS
+  Studies listing a benchmark that is not in the benchmark sheet: 0
+  Benchmarks whose study count differs from the linked studies: 0
+  Benchmarks whose author-year list differs (usually two studies share a label): 0
+
+PAPER LINKS
+  manual override                    8
+  verified lookup                    425
+
+CONSTRUCT LABELS HARMONIZED (study sheet -> benchmark sheet)
+  Fairness / equity  ->  Fairness or equity   (6)
+  Guideline adherence / information quality  ->  Guideline adherence or information quality   (14)
+  Other (appraisal and coping response prediction)  ->  Appraisal and coping response prediction   (1)
+  Other (cognitive distortion detection)  ->  Cognitive distortion detection   (7)
+  Other (psychotherapy process annotation)  ->  Psychotherapy process annotation   (1)
+  Other (support strategy prediction)  ->  Support strategy prediction   (2)
+  Professionalism / clinical communication style  ->  Professionalism or clinical communication style   (2)
+  Treatment/clinical accuracy  ->  Treatment or clinical accuracy   (10)
+
+VOCABULARIES (check for typos or near-duplicates)
+  Benchmarks / purpose:
+       155  Screening and detection
+       114  Mental health support
+        49  Knowledge
+        45  Safety
+        39  Clinical decision support
+        25  Simulation and judging
+        15  Clinical documentation and annotation
+        11  Equity, fairness, and stigma
+  Benchmarks / constructs:
+       141  Diagnostic accuracy
+        49  Psychiatric knowledge accuracy
+        47  Therapeutic technique fidelity
+        44  Risk detection accuracy
+        43  Safety
+        41  Empathy
+        14  Guideline adherence or information quality
+        11  Helpfulness
+        11  Response quality
+        11  Simulation fidelity
+         9  Treatment or clinical accuracy
+         9  Emotion recognition
+         7  Psychotherapy process annotation
+         6  Clinical documentation quality
+         6  Cognitive distortion detection
+         5  Stigma and harmful-content detection
+         4  Fairness or equity
+         3  Supportiveness
+         2  Intervention strategy selection
+         2  Cultural sensitivity
+         2  Privacy
+         2  Trustworthiness
+         1  Professionalism or clinical communication style
+         1  Support strategy prediction
+         1  Appraisal and coping response prediction
+  Benchmarks / conditions:
+       144  Depression
+       111  Counseling
+       106  Suicide or self-harm
+        97  Emotional support
+        55  Anxiety
+        52  Well-being
+        43  General psychiatry
+        27  Trauma or PTSD
+        26  Stress
+        24  Bipolar disorder
+        17  Eating disorders
+        16  Schizophrenia
+        16  Autism spectrum
+        15  Cognitive distortion
+        12  Psychosis
+        12  OCD
+        12  ADHD
+        10  Bias
+        10  General mental health
+         6  Crisis counseling
+         5  Personality disorders
+         5  Stigma
+         5  Misinformation
+         4  General psychology
+         4  Delusional disorder
+         3  Postpartum or perinatal depression
+         2  Grief and bereavement
+         1  Social phobia
+         1  Body image
+  Benchmarks / input_formats:
+       138  Social media or online content
+        72  Free-text prompts
+        54  Interactive dialogue (simulated or live users)
+        53  Transcripts (interviews, sessions, hotline calls)
+        52  Simulated dialogues or patient interactions
+        47  Multiple-choice questions
+        40  Chat logs
+        39  Clinical vignettes
+        31  Question-answer pairs
+        14  Clinical notes
+        13  Audio recordings
+        12  Structured or tabular data
+         9  Video recordings
+         8  Images
+         7  Personal narratives
+         6  Structured forms or checklists
+         4  Other
+         2  News or media articles
+         2  Journal or diary entries
+  Benchmarks / material:
+       307  Real-world data
+       124  Human-authored material
+       105  LLM-generated material
+         1  Mixed (types not specified)
+  Benchmarks / input_source:
+       214  Assembled for the benchmark
+       167  Existing dataset, instrument, or exam
+        72  Both
+  Benchmarks / conversation:
+       356  Single-turn
+        84  Multi-turn interactive
+        13  Mixed
+  Benchmarks / languages:
+       328  English
+        82  Mandarin
+        18  Arabic
+        12  Spanish
+        11  Not reported
+        10  German
+         7  Korean
+         7  Portuguese
+         6  Turkish
+         6  Japanese
+         5  Italian
+         5  French
+         4  Hebrew
+         3  Bengali
+         2  Polish
+         2  Russian
+         2  Finnish
+         2  Greek
+         1  Dutch
+         1  Persian
+         1  Swedish
+         1  Hindi
+         1  Cantonese
+         1  Danish
+         1  Thai
+         1  Vietnamese
+         1  Nigerian Pidgin English
+  Benchmarks / lang_scope:
+       297  English only
+       115  Other languages only
+        31  English and other languages
+        10  Not reported
+  Benchmarks / populations:
+       111  Social media users
+        91  People with a mental health condition, nonclinical setting
+        86  Help-seekers on counseling platforms or helplines
+        70  General population
+        65  Patients in health care settings
+        47  Not applicable (knowledge items; no person depicted)
+        18  Clinicians, trainees, or caregivers
+  Benchmarks / age_group:
+       394  Not stated
+        16  Adolescents
+        11  Children
+        10  Young adults
+         8  Adults
+         8  Children and adolescents
+         5  Adolescents and adults
+         1  Older adults
+  Benchmarks / audiences:
+       180  Provider
+       178  Researcher
+       151  Patient or consumer
+        12  Not applicable
+  Benchmarks / size_bin:
+       171  100 to 999
+       107  Fewer than 100
+        99  1,000 to 9,999
+        45  Not reported
+        31  10,000 or more
+  Benchmarks / availability:
+       220  Publicly released
+       127  Not available
+        93  Available on request
+        14  Partially specified
+         8  Fully specified in paper
+         4  Method reproducible, items unavailable
+  Benchmarks / ref_types:
+       247  Expert or clinician ratings
+       119  No human or ground-truth comparator
+       116  Answer key or recorded value
+        99  Trained annotator ratings
+        27  Proxy labels (subreddit, hashtag, self-declared)
+         4  Pre-existing dataset labels (labelers not described)
+  Benchmarks / scoring:
+       318  Accuracy metrics
+       149  Human ratings or preferences
+       106  LLM ratings or preferences
+        64  Text similarity metrics
+        12  Other (scale scores, counts, or distributional statistics)
+  Benchmarks / judge_families:
+        77  GPT
+        13  Claude
+        11  Other or unspecified
+         9  Gemini
+         7  DeepSeek
+         4  Qwen
+         4  Mistral
+         3  Llama
+  Benchmarks / judge_compared:
+       347  None
+        57  No
+        49  Yes
+  Benchmarks / judge_agreement:
+       347  None
+        57  Not compared
+        22  Met threshold
+        12  Percent agreement or match rate only
+         6  Below threshold
+         5  Qualitative comparison only
+         3  Poor agreement shown, no coefficient
+         1  Met threshold on some dimensions
+  Benchmarks / lived:
+         5  Scoring: consulted
+         4  Inputs: consulted
+         4  Inputs: co-design
+         3  Scoring: co-design
+         1  Inputs: co-design, consulted
+  Benchmarks / reuse_bin:
+       385  1 study
+        40  2 studies
+        11  3 studies
+         8  4 or 5 studies
+         6  6 to 9 studies
+         3  10 or more studies
+  Studies / year:
+       198  2025
+       120  2026
+        88  2024
+        27  2023
+  Studies / source_type:
+       252  Preprint
+       134  Peer-reviewed journal
+        47  Conference proceeding
+  Studies / study_type:
+       229  Benchmark development
+       121  Evaluation
+        83  Model development
+  Studies / mh_scope:
+       391  Mental health only
+        42  Mixed, mental health results reported separately
+  Studies / model_families:
+       343  GPT
+       208  Llama
+       135  Gemini/Gemma
+       106  Qwen
+        91  Claude
+        86  DeepSeek
+        70  Mistral
+        39  GLM
+        20  Phi
+        20  Grok
+        14  Baichuan
+         6  Other
+  Studies / model_access:
+       326  API
+        70  Chat user interface
+        37  Not reported
+  Studies / variability:
+       246  Not reported
+       120  Single run, generation settings reported
+        65  Variability across repeated runs reported
+         2  Not applicable (no LLM runs reported)
+  Studies / constructs:
+       128  Diagnostic accuracy
+        52  Risk detection accuracy
+        51  Psychiatric knowledge accuracy
+        48  Therapeutic technique fidelity
+        44  Safety
+        43  Empathy
+        14  Guideline adherence or information quality
+        14  Helpfulness
+        13  Response quality
+        10  Treatment or clinical accuracy
+         9  Emotion recognition
+         9  Simulation fidelity
+         7  Psychotherapy process annotation
+         7  Cognitive distortion detection
+         7  Stigma and harmful-content detection
+         6  Clinical documentation quality
+         6  Fairness or equity
+         3  Intervention strategy selection
+         3  Supportiveness
+         2  Professionalism or clinical communication style
+         2  Cultural sensitivity
+         2  Support strategy prediction
+         2  Trustworthiness
+         1  Privacy
+         1  Appraisal and coping response prediction
+  Studies / scoring:
+       306  Accuracy metrics
+       185  Human ratings or preferences
+       130  LLM ratings or preferences
+       100  Text similarity metrics
+        13  Other (scale scores, counts, or distributional statistics)
+  Studies / models_bin:
+       131  2 or 3 models
+       108  6 to 10 models
+        78  4 or 5 models
+        60  More than 10 models
+        53  1 model
+         3  None
+  Studies / benchmarks_bin:
+       365  1 benchmark
+        40  2 benchmarks
+        17  3 to 5 benchmarks
+        11  6 or more benchmarks
+
+QUALITY (modal rating across studies)
+  input    High 52, Adequate 311, Poor 90, NR 0, NA 0
+  ref      High 67, Adequate 321, Poor 29, NR 9, NA 27
+  scoring  High 173, Adequate 185, Poor 95, NR 0, NA 0
+  High on all three: 18
+  Poor on at least one (NR reference standard counted as Poor): 183
+  Sizes that could not be fully parsed: 624 not found in source documentationᵉ; 1,000 not found in source documentationᶜ; 405 not found in source documentationᵉ; 960 not found in source documentationᵉ; 10,000 ᵃ
+
+Wrote site/assets/data/atlas-data.js (1200 KB)
+
+WARNINGS (11)
+  - Study 'Hong et al. 2025': the model count column says 4, but 2 models are listed.
+  - Study 'Li et al. 2026' lists the same model more than once (ignoring capitalization): llama-3.3-70b-instruct.
+  - Study 'Li et al. 2026': the model count column says 10, but 11 models are listed.
+  - Study 'Wu et al. 2025' lists 1 model(s) both as evaluated and as a comparator, e.g. gpt-4o.
+  - Study 'Xiao et al. 2025' lists 20 model(s) both as evaluated and as a comparator, e.g. deepseek-r1, deepseek-v3, dsdistill-llama-70b, dsdistill-llama-8b.
+  - Study 'Xie et al. 2025': the models cell contains a note rather than only model names (shown separately): 56 models in total per Section 4.1; the remaining ~22 (incl. other Gemini-1.5 and Llama-3.1 variants, sizes 1.8B to 
+  - Study 'Xie et al. 2025': the model count column says 36, but 34 models are listed.
+  - Study 'Xu et al. 2026' lists 2 model(s) both as evaluated and as a comparator, e.g. glm4-9b-chat, llama3-8b-chinese-chat.
+  - Benchmark 'Counselling Q&A items (MentalChat16K et al.) (Badawi 2026)' lists parent 'CounselChat'; linked to 'Counsel Chat'. Consider using the exact name.
+  - Benchmark 'Social-media datasets: Dreaddit, DR, SAD, IRF and WD, LLM-augmented (Pinzuti 2025)' lists parent 'Depression Reddit'; linked to 'Depression_Reddit'. Consider using the exact name.
+  - Benchmark 'CBT-Bench' lists parent 'TherapistQA'; linked to 'Therapist QA'. Consider using the exact name.
