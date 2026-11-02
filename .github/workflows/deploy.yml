@@ -1,0 +1,64 @@
+name: Build and publish the atlas
+
+# Runs whenever anything is pushed to the main branch (for example, when a
+# new workbook is uploaded to data/), and can also be started by hand from
+# the Actions tab. If the workbook fails validation, nothing is published
+# and the live site stays as it was.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the files
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build the data from the workbook
+        run: python3 build/build_data.py
+        env:
+          ATLAS_SITE_URL: ${{ steps.pages.outputs.base_url }}
+
+      - name: Show the validation report
+        if: always()
+        run: cat build/validation_report.txt
+
+      - name: Point the link-preview image at the live address
+        run: sed -i "s#content=\"assets/img/og.png\"#content=\"${{ steps.pages.outputs.base_url }}/assets/img/og.png\"#g" site/index.html
+
+      - name: Package the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
