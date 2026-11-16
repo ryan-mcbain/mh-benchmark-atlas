@@ -23,7 +23,11 @@ Before you start, preview the site on your own computer by double-clicking `site
    - Copy everything *inside* this `mh-benchmark-atlas` folder into that new folder. Include the hidden `.github` folder. On a Mac, press **Cmd + Shift + .** in Finder to show hidden files.
    - Back in GitHub Desktop, type a summary such as "First version", then click **Commit to main** and **Push origin**.
 
-   *Alternative without the app:* on the repository page, click **Add file > Upload files** and drag in the folders. Browsers often skip hidden folders, so afterwards check that `.github/workflows/deploy.yml` appears in the repository. If it doesn't, click **Add file > Create new file**, type `.github/workflows/deploy.yml` as the name, and paste in the contents of that file from this folder.
+   *Alternative without the app:* on the repository page, click **Add file > Upload files** and drag in the folders. Browsers won't upload the hidden `.github` folder, so add the publishing workflow by hand. It takes a minute:
+   1. On the repository page, click **Add file > Create new file**.
+   2. In the file-name box, type `.github/workflows/deploy.yml`. Each `/` you type turns into a folder.
+   3. Open `deploy-workflow-for-github.txt`, which sits next to the `mh-benchmark-atlas` folder. Select all, copy, and paste it into the large editing box.
+   4. Click **Commit changes**.
 
 4. **Turn on Pages.** In the repository, go to **Settings > Pages**. Under **Build and deployment > Source**, choose **GitHub Actions**.
 
@@ -32,10 +36,22 @@ Before you start, preview the site on your own computer by double-clicking `site
 ### Updating the data later
 
 1. Save the new workbook with the same sheet and column names.
-2. In the repository, open the `data` folder, delete the old `.xlsx`, and upload the new one (**Add file > Upload files**, then **Commit changes**).
-3. The site rebuilds automatically within a minute or two.
+2. In the repository, open the `data` folder and upload the new workbook (**Add file > Upload files**, then **Commit changes**).
+3. Then delete the old one: click the old `.xlsx`, open the **…** menu at the top right of the file view, choose **Delete file**, and commit. (Upload first: deleting first leaves no workbook, so that build fails harmlessly.)
+4. The site rebuilds automatically within a minute or two. If both workbooks are briefly present, the build uses the one most recently saved in Excel and notes it in the report.
 
 The build checks the workbook first. If something is wrong, for example a renamed column or a study that lists a benchmark missing from the benchmark sheet, the build stops. **The live site stays as it was** and GitHub emails you. To see what failed, open the failed job in the **Actions** tab and expand "Build the data from the workbook". The same messages are written to `build/validation_report.txt` when you run the build on your own computer.
+
+### Updating the site's code or text
+
+When the site files themselves change (for example, new Methods text), upload the changed folders over the old ones:
+
+1. On the repository's main page, click **Add file > Upload files**.
+2. From the `mh-benchmark-atlas` folder on your computer, drag in the `build`, `data`, and `site` folders and any changed top-level files such as `README.md`. GitHub keeps the folder structure and replaces files that have the same name.
+3. Click **Commit changes**. Uploading never deletes anything, so remove files that no longer belong (such as an old workbook) one at a time as in step 3 above.
+4. Watch the **Actions** tab for the green check.
+
+The workflow file in `.github` only needs to be re-entered if it changes; `deploy-workflow-for-github.txt` always holds the current copy.
 
 ### Optional: your own web address
 

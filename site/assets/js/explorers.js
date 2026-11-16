@@ -138,15 +138,20 @@
   }
 
   function judgeFunnel(el, items, ctx) {
+    // As in the review, "moderate or better" counts judges that met the
+    // threshold on most dimensions and those that met it on some.
+    const MET = ["Met threshold", "Met threshold on some dimensions"];
     const judged = items.filter((b) => b.flags.llm_judge);
     const compared = judged.filter((b) => b.judge_compared === "Yes");
-    const met = judged.filter((b) => b.judge_agreement === "Met threshold");
+    const met = judged.filter((b) => MET.includes(b.judge_agreement));
+    const metMost = met.filter((b) => b.judge_agreement === MET[0]).length;
     const sel = (k, v) => !!(ctx.sel[k] && ctx.sel[k].has(v));
+    const metSelected = MET.every((v) => sel("agreement", v));
     A.charts.bars(el, {
       rows: [
         { value: "j", label: "Scored by an LLM judge", count: judged.length, selected: sel("judge", "Scored by an LLM judge") },
         { value: "c", label: "Judge compared with human raters", count: compared.length, selected: sel("judgecompared", "Compared") },
-        { value: "m", label: "Agreement met the threshold", count: met.length, selected: sel("agreement", "Met threshold") },
+        { value: "m", label: "Agreement moderate or better", count: met.length, selected: metSelected },
       ],
       max: Math.max(1, judged.length),
       showPct: false,
@@ -156,7 +161,7 @@
       onToggle: (v) => {
         if (v === "j") ctx.toggle("judge", "Scored by an LLM judge");
         else if (v === "c") ctx.toggle("judgecompared", "Compared");
-        else ctx.toggle("agreement", "Met threshold");
+        else ctx.setMany(MET.map((x) => ["agreement", x]), !metSelected);
       },
     });
     let foot = el.querySelector(".chart-foot");
@@ -164,8 +169,9 @@
       foot = h("p", { class: "chart-foot" });
       el.appendChild(foot);
     }
+    const metText = met.length === metMost ? A.fmt(met.length) : A.fmt(met.length) + " (on most dimensions for " + A.fmt(metMost) + ", on some for " + A.fmt(met.length - metMost) + ")";
     foot.textContent = judged.length
-      ? A.fmt(judged.length) + " of " + A.fmt(items.length) + " benchmarks (" + A.pct(judged.length, items.length) + "%) were scored by an LLM judge. For " + A.fmt(compared.length) + " of them (" + A.pct(compared.length, judged.length) + "%), a study compared the judge with human raters; agreement met the threshold (κ ≥ 0.40, or r, ρ, or ICC ≥ 0.50, on most dimensions) for " + A.fmt(met.length) + "."
+      ? A.fmt(judged.length) + " of " + A.fmt(items.length) + " benchmarks (" + A.pct(judged.length, items.length) + "%) were scored by an LLM judge. For " + A.fmt(compared.length) + " of them (" + A.pct(compared.length, judged.length) + "%), a study compared the judge with human raters, and agreement was moderate or better (κ ≥ 0.40, or r, ρ, or ICC ≥ 0.50) for " + metText + ". The scoring quality rating is stricter: validation counts as adequate from 0.70 and high from 0.90."
       : "";
   }
 
@@ -338,7 +344,7 @@
         { key: "access", label: "Model access", cls: "c-opt", render: (s) => esc(s.model_access) },
         { key: "variability", label: "Run-to-run variability", cls: "c-opt", render: (s) => esc(s.variability) },
         { key: "construct", label: "Constructs", cls: "c-opt", render: (s) => list(s.constructs, 2) },
-        { key: "scoring", label: "Scoring methods of benchmarks used", cls: "c-opt", render: (s) => list(s.scoring, 2) },
+        { key: "scoring", label: "Scoring methods", cls: "c-opt", render: (s) => list(s.scoring, 2) },
         { key: "judge", label: "LLM judge", cls: "c-opt", render: (s) => (s.llm_judge ? "Yes" : "No") },
         { key: "bpurpose", label: "Benchmark purposes", cls: "c-opt", render: (s) => list(s.bench_purposes, 2) },
       ],
@@ -353,8 +359,8 @@
         { key: "access", title: "Model access", render: barsChart("access", { unit: "studies" }) },
         { key: "variability", title: "Run-to-run variability", render: barsChart("variability", { unit: "studies" }) },
         { key: "construct", title: "Primary evaluation construct", render: barsChart("construct", { top: 12, unit: "studies" }) },
-        { key: "judge", title: "LLM judge in the study", render: barsChart("judge", { unit: "studies" }) },
-        { key: "scoring", title: "Scoring methods of the benchmarks used", note: "Pooled across every study that used each benchmark, so a study can show a method it did not apply itself.", render: barsChart("scoring", { unit: "studies" }) },
+        { key: "scoring", title: "Scoring method", note: "A study can use several methods across its benchmarks.", render: barsChart("scoring", { unit: "studies" }) },
+        { key: "judge", title: "LLM judge", render: barsChart("judge", { unit: "studies" }) },
         { key: "venue", title: "Most common venues", render: barsChart("venue", { top: 12, unit: "studies" }) },
       ],
       mapDims: [
@@ -370,8 +376,8 @@
         { key: "variability", label: "Run-to-run variability" },
         { key: "construct", label: "Primary construct" },
         { key: "bmaterial", label: "Input material of benchmarks used" },
-        { key: "scoring", label: "Scoring methods of benchmarks used" },
-        { key: "judge", label: "LLM judge in the study" },
+        { key: "scoring", label: "Scoring method" },
+        { key: "judge", label: "LLM judge" },
         { key: "modified", label: "Benchmark modification" },
       ],
       mapDefault: ["bpurpose", "year"],

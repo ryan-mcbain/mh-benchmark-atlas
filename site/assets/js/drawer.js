@@ -41,7 +41,8 @@
   function openHref(show) {
     const r = A.parseHash();
     const params = Object.assign({}, r.params, { show: [show] });
-    const page = ["benchmarks", "studies", "overview"].includes(r.page) ? r.page : show[0] === "b" ? "benchmarks" : "studies";
+    const stay = ["benchmarks", "studies", "overview", "methods", "about"].includes(r.page);
+    const page = stay ? [r.page].concat(r.sub || []).join("/") : show[0] === "b" ? "benchmarks" : "studies";
     return A.buildHash(page, params);
   }
   A.openHref = openHref;
@@ -59,7 +60,7 @@
     const r = A.parseHash();
     const params = Object.assign({}, r.params);
     delete params.show;
-    return A.buildHash(r.page, params);
+    return A.buildHash([r.page].concat(r.sub || []).join("/"), params);
   }
 
   A.drawer = {
@@ -228,7 +229,13 @@
     frag.appendChild(h("p", { class: "dr-meta" },
       (b.named ? "Named benchmark" : "Unnamed item set") + ", used in " + A.countLabel(b.n_studies, "study", "studies") + (b.first_year ? ", " + (b.first_year === b.last_year ? b.first_year : b.first_year + " to " + b.last_year) : "") + "."));
 
+    const refNote = b.q.ref.r === "NR"
+      ? "Reference standard quality not reported: this benchmark reuses an existing dataset, and " + (b.n_studies > 1 ? "the studies that used it" : "the study that used it") + " did not describe its labeling in enough detail to rate. This is a separate category, not a poor rating."
+      : b.q.ref.r === "NA"
+        ? "No reference standard: this benchmark was rated as having no human or ground-truth reference standard, so this component has no rating."
+        : null;
     frag.appendChild(section("Quality", qBlock(b),
+      refNote ? h("p", { class: "dr-small" }, refNote) : null,
       h("p", { class: "dr-small" }, b.n_studies > 1 ? "The most common rating across the " + b.n_studies + " studies that used it." : "Rated from the one study that used it.", " ",
         h("a", { href: "#/methods/quality" }, "How quality was rated"))));
 
@@ -321,8 +328,8 @@
       ["Study type", vals(P, "studytype", [s.study_type])],
       ["Mental health scope", vals(P, "scope", [s.mh_scope])],
       ["Primary constructs", vals(P, "construct", s.constructs)],
-      ["Scoring methods of the benchmarks used", vals(P, "scoring", s.scoring), "Pooled across every study that used these benchmarks, so it can include methods this study did not apply."],
-      ["LLM judge used in this study", s.llm_judge ? "Yes" : "No"],
+      ["Scoring methods", vals(P, "scoring", s.scoring)],
+      ["LLM judge used", s.llm_judge ? "Yes" : "No"],
     ])));
     return frag;
   }

@@ -51,6 +51,19 @@
     String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
   A.fmt = (n) => (n == null || n === "" ? "" : Number(n).toLocaleString("en-US"));
+  // Dates are shown in US Eastern time (where the data are maintained), so
+  // every visitor sees the same date whatever their own time zone.
+  A.fmtDate = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    const o = { year: "numeric", month: "long", day: "numeric" };
+    try {
+      return d.toLocaleDateString("en-US", Object.assign({ timeZone: "America/New_York" }, o));
+    } catch (e) {
+      return d.toLocaleDateString("en-US", o);
+    }
+  };
   A.pct = (n, d) => (d ? Math.round((100 * n) / d) : 0);
   A.plural = (n, one, many) => (n === 1 ? one : many || one + "s");
   A.countLabel = (n, one, many) => A.fmt(n) + " " + A.plural(n, one, many);

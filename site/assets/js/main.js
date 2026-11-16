@@ -14,8 +14,8 @@
   // Footer data version
   const fv = document.getElementById("foot-version");
   if (fv) {
-    const d = A.meta.workbook_modified ? new Date(A.meta.workbook_modified) : null;
-    fv.textContent = "Data: " + A.fmt(A.B.length) + " benchmarks and " + A.fmt(A.S.length) + " studies" + (d ? ", workbook saved " + d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "") + ".";
+    const d = A.fmtDate(A.meta.workbook_modified);
+    fv.textContent = "Data: " + A.fmt(A.B.length) + " benchmarks and " + A.fmt(A.S.length) + " studies" + (d ? ", workbook saved " + d : "") + ".";
   }
 
   // Mobile menu
@@ -60,7 +60,8 @@
     const show = A.param(A.parseHash(href).params, "show");
     if (show) {
       e.preventDefault();
-      A.openRecord(show, href);
+      // Open over the current page, with its current filters and section.
+      A.openRecord(show);
     }
   });
 

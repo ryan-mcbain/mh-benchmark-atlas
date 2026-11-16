@@ -33,9 +33,9 @@ mh-benchmark-atlas/
 
 ## Updating the data
 
-The site computes every number from the workbook. Nothing is typed in by hand except a few facts about the search and screening that the workbook does not hold: the databases, the search dates, and the counts of 3,454 records and 751 full-text reports. Those are near the top of `site/assets/js/pages.js` under `A.review`, along with the author list and citation.
+The site computes every number from the workbook. Nothing is typed in by hand except facts from the manuscript that the workbook does not hold: the databases and search dates, the search and exclusion counts, the screening and rater-agreement kappas, the judge-validation thresholds, the evaluation-purpose descriptions from Table 1, the author list, and the citation. They are near the top of `site/assets/js/pages.js` under `A.review`, which also records the manuscript draft date shown on the Methods page. Update them when the manuscript changes.
 
-1. Put the new workbook in `data/` and remove the old one. Keep the sheet names (one containing "Benchmark", one containing "stud") and the column headers. Column order does not matter. Extra columns are allowed and reported as unused.
+1. Put the new workbook in `data/` and remove the old one. Keep the sheet names (one containing "Benchmark", one containing "stud") and the column headers; the build accepts either a hyphen or an en dash in headers such as "Judge–human agreement". Column order does not matter. Extra columns are allowed and reported as unused.
 2. Run `python3 build/build_data.py`. If you use GitHub Pages, this happens automatically when you upload.
 3. Read `build/validation_report.txt`. It lists every vocabulary with counts, so typos and near-duplicates stand out.
 
@@ -51,7 +51,9 @@ The build **stops with an error and changes nothing** if a required column is mi
 - **Parses sizes** into a number, a unit, and the source footnote letter (a–e).
 - **Separates notes from model lists:** "None (benchmark proposed without model results)" means no models, and bracketed abstractor notes are shown as notes rather than model names.
 - **Flags likely workbook slips** as warnings in the report, without stopping the build: model counts that don't match the list, duplicate models, parent names that only match after ignoring spaces or underscores, and study counts that don't match.
-- **Adds derived fields:** the years each benchmark was used, language coverage, size and reuse bands, whether an LLM judge was used, and the quality presets. As in the review's summary statistics, a reference standard rated NR counts as poor for the "Poor on at least one" preset.
+- **Adds derived fields:** the years each benchmark was used, language coverage, size and reuse bands, whether an LLM judge was used, and the quality presets. As in the review, "Poor on at least one" counts only explicit Poor ratings; a reference standard rated NR (not reported) is a separate category, shown dotted, and NA (no reference standard) is shown hatched.
+- **Separates partial "no comparator" entries:** the review counts "No human or ground-truth comparator" only when it is a benchmark's sole reference standard type. When it is listed alongside another type, the site shows it as "No comparator for some outputs". The report gives both counts.
+- **Capitalizes age groups** for display ("adults" becomes "Adults").
 
 ### Paper links
 

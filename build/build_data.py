@@ -201,12 +201,36 @@ def unique_slug(base, used):
 
 
 def norm_header(h):
-    return re.sub(r"\s+", " ", str(h or "")).strip().lower()
+    """Compare headers ignoring case, spacing, and the kind of dash used."""
+    h = unicodedata.normalize("NFKC", str(h or ""))
+    h = re.sub(r"[\u2010-\u2015\u2212]", "-", h)
+    return re.sub(r"\s+", " ", h).strip().lower()
 
 
 def norm_title(t):
     t = unicodedata.normalize("NFKD", str(t or "")).encode("ascii", "ignore").decode().lower()
     return re.sub(r"[^a-z0-9]+", " ", t).strip()
+
+
+def sentence_case(v):
+    """'adolescents and adults' -> 'Adolescents and adults' (other words untouched)."""
+    v = clean(v)
+    if isinstance(v, str) and v[:1].islower():
+        return v[:1].upper() + v[1:]
+    return v
+
+
+NO_COMPARATOR = "No human or ground-truth comparator"
+NO_COMPARATOR_PART = "No comparator for some outputs"
+
+
+def ref_types_shown(vals):
+    """The review counts a benchmark as having no comparator only when that is
+    its sole reference standard type. Listed alongside another type, it means
+    some outputs (or some studies) had no comparator, so it is shown apart."""
+    if NO_COMPARATOR in vals and len(vals) > 1:
+        return [NO_COMPARATOR_PART if v == NO_COMPARATOR else v for v in vals]
+    return vals
 
 
 def yes_no(v):
@@ -230,7 +254,8 @@ def as_int(v):
 
 
 # --------------------------------------------------------------------------
-# Column definitions (matched by header text, case/space-insensitive)
+# Column definitions (matched by header text, ignoring case, spacing, and
+# dash style). A tuple lists accepted alternatives; the first is preferred.
 # --------------------------------------------------------------------------
 BENCH_COLS = OrderedDict([
     ("name", "Benchmark"),
@@ -252,11 +277,11 @@ BENCH_COLS = OrderedDict([
     ("size", "Size"),
     ("availability", "Availability of inputs"),
     ("ref_types", "Reference standard type(s)"),
-    ("instruments", "Validated instruments used as reference standard"),
+    ("instruments", ("Validated instrument used as reference standard", "Validated instruments used as reference standard")),
     ("scoring", "Scoring method(s)"),
     ("judge_families", "LLM judge model family"),
     ("judge_compared", "LLM judge compared with human raters"),
-    ("judge_agreement", "Judge-human agreement"),
+    ("judge_agreement", ("Judge-human agreement", "Judge–human agreement")),
     ("agreement_stat", "Reported agreement statistic"),
     ("lived", "Involvement of people with lived experience"),
     ("q_input", "Input quality"),
@@ -295,12 +320,13 @@ def table_from_sheet(rows, cols, sheet_name):
     header = [norm_header(h) for h in rows[0]]
     index = {}
     for key, label in cols.items():
-        want = norm_header(label)
-        if want in header:
-            index[key] = header.index(want)
+        options = label if isinstance(label, (tuple, list)) else (label,)
+        hit = next((norm_header(o) for o in options if norm_header(o) in header), None)
+        if hit is not None:
+            index[key] = header.index(hit)
         else:
-            error("Sheet '%s' is missing the column '%s'." % (sheet_name, label))
-    known = {norm_header(l) for l in cols.values()}
+            error("Sheet '%s' is missing the column '%s'." % (sheet_name, options[0]))
+    known = {norm_header(o) for l in cols.values() for o in (l if isinstance(l, (tuple, list)) else (l,))}
     extra = [rows[0][i] for i, h in enumerate(header) if h and h not in known]
     if extra:
         warn("Sheet '%s' has columns the website does not use yet: %s" % (sheet_name, ", ".join(map(str, extra))))
@@ -518,12 +544,31 @@ def main(argv):
     sraw, snotes = table_from_sheet(sheets[s_sheet], STUDY_COLS, s_sheet)
     if ERRORS:
         return finish(None)
+    recased = sum(1 for r in braw if isinstance(r.get("age_group"), str) and r["age_group"][:1].islower())
     log("Benchmark rows: %d   Study rows: %d" % (len(braw), len(sraw)))
+    if recased:
+        log("Age group values given an initial capital for display: %d" % recased)
     log("Footnotes captured: %d (benchmarks), %d (studies)" % (len(bnotes), len(snotes)))
     log()
 
+    # ---- Record IDs ------------------------------------------------------
+    # IDs are built from names and titles. If two ever collide, the "-2"
+    # suffix is assigned in name/title order, not row order, so re-sorting the
+    # workbook never changes a record's link.
+    def study_base(r):
+        fa = r["first_author"] or "Unknown"
+        surname = re.sub(r"\s+et al\.?$", "", fa).strip()
+        title = r["title"] or ""
+        return slugify("%s %s %s" % (surname, as_int(r["year"]) or "", " ".join(re.findall(r"[A-Za-z0-9]+", title)[:4])), 70)
+
+    study_ids, used = {}, set()
+    for r in sorted(sraw, key=lambda r: (norm_title(r["title"]), r["_row"])):
+        study_ids[r["_row"]] = unique_slug(study_base(r), used)
+    bench_ids, used = {}, set()
+    for r in sorted(braw, key=lambda r: (str(r["name"] or ""), r["_row"])):
+        bench_ids[r["_row"]] = unique_slug(slugify(r["name"] or "item"), used)
+
     # ---- Studies --------------------------------------------------------
-    used = set()
     studies = []
     title_seen = {}
     for r in sraw:
@@ -536,9 +581,7 @@ def main(argv):
         title_seen[norm_title(title)] = r["_row"]
         fa = r["first_author"] or "Unknown"
         year = as_int(r["year"])
-        surname = re.sub(r"\s+et al\.?$", "", fa).strip()
-        base = slugify("%s %s %s" % (surname, year or "", " ".join(re.findall(r"[A-Za-z0-9]+", title)[:4])), 70)
-        sid = unique_slug(base, used)
+        sid = study_ids[r["_row"]]
         models, model_notes = [], []
         raw_models = clean(r["models"]) or ""
         if re.match(r"^(none|na|n/a|not applicable)\b", str(raw_models), re.I):
@@ -578,7 +621,6 @@ def main(argv):
         })
 
     # ---- Benchmarks -----------------------------------------------------
-    used = set()
     benchmarks = []
     by_name = {}
     for r in braw:
@@ -606,7 +648,7 @@ def main(argv):
         judge_agreement = clean(r["judge_agreement"])
         stat = clean(r["agreement_stat"])
         b = {
-            "id": unique_slug(slugify(name), used),
+            "id": bench_ids[r["_row"]],
             "_row": r["_row"],
             "name": name,
             "named": yes_no(r["named"]),
@@ -623,12 +665,12 @@ def main(argv):
             "conversation": r["conversation"],
             "languages": split_values(r["languages"]),
             "populations": split_values(r["populations"]),
-            "age_group": r["age_group"],
+            "age_group": sentence_case(r["age_group"]),
             "audiences": [("Not applicable" if a == "NA" else a) for a in split_values(r["audiences"])],
             "size": size,
             "size_bin": size_bin(size),
             "availability": split_values(r["availability"]),
-            "ref_types": split_values(r["ref_types"]),
+            "ref_types": ref_types_shown(split_values(r["ref_types"])),
             "instruments": list_or_empty(r["instruments"]),
             "scoring": split_values(r["scoring"]),
             "judge_families": list_or_empty(r["judge_families"]),
@@ -727,9 +769,10 @@ def main(argv):
         ratings = [q["input"]["r"], q["ref"]["r"], q["scoring"]["r"]]
         b["flags"] = {
             "high_all3": all(x == "High" for x in ratings),
-            # As in the review's summary statistics, a reference standard
-            # rated NR (not reported) counts as Poor.
-            "any_poor": any(x == "Poor" for x in ratings) or q["ref"]["r"] == "NR",
+            # Only explicit Poor ratings count. A reference standard rated NR
+            # (not reported) is its own category, as in the review.
+            "any_poor": any(x == "Poor" for x in ratings),
+            "ref_nr": q["ref"]["r"] == "NR",
             "llm_judge": bool(b["judge_families"]) or "LLM ratings or preferences" in b["scoring"],
             "validated_instrument": bool(b["instruments"]),
             "lived_experience": bool(b["lived"]),
@@ -869,10 +912,18 @@ def main(argv):
     for dim in ("input", "ref", "scoring"):
         log("  %-8s %s" % (dim, ", ".join("%s %d" % (r, qc[(dim, r)]) for r in ("High", "Adequate", "Poor", "NR", "NA"))))
     log("  High on all three: %d" % sum(b["flags"]["high_all3"] for b in benchmarks))
-    log("  Poor on at least one (NR reference standard counted as Poor): %d" % sum(b["flags"]["any_poor"] for b in benchmarks))
+    log("  Poor on at least one (explicit Poor ratings only): %d" % sum(b["flags"]["any_poor"] for b in benchmarks))
+    log("  Reference standard not reported (NR, a separate category): %d" % sum(b["flags"]["ref_nr"] for b in benchmarks))
     odd_sizes = [b["size"]["raw"] for b in benchmarks if b["size"] and (b["size"]["n"] is None or not b["size"]["unit"])]
     if odd_sizes:
         log("  Sizes that could not be fully parsed: %s" % "; ".join(odd_sizes))
+    log()
+    log("REFERENCE STANDARD TYPE")
+    log("  '%s' as the only type: %d" % (NO_COMPARATOR, sum(b["ref_types"] == [NO_COMPARATOR] for b in benchmarks)))
+    log("  Listed alongside another type, shown as '%s': %d" % (NO_COMPARATOR_PART, sum(NO_COMPARATOR_PART in b["ref_types"] for b in benchmarks)))
+    na_typed = [b["name"] for b in benchmarks if b["q"]["ref"]["r"] == "NA" and b["ref_types"] != [NO_COMPARATOR]]
+    if na_typed:
+        log("  Rated 'no reference standard' but also listing another type: %d (%s)" % (len(na_typed), "; ".join(na_typed)))
 
     # ---- Output ---------------------------------------------------------
     if ERRORS:

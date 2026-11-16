@@ -42,6 +42,9 @@
       el.appendChild(ul);
     }
     const rows = opts.rows.filter((r) => r.count > 0 || r.selected);
+    // Bars are reused across redraws, so clicks call the latest handler
+    // (a handler may close over the current selection state).
+    ul._onToggle = opts.onToggle;
     const total = opts.total || 0;
     const max = opts.max || Math.max(1, ...rows.map((r) => r.count));
     const anySel = rows.some((r) => r.selected);
@@ -62,7 +65,7 @@
                 h("span", { class: "bar-label" }),
                 h("span", { class: "bar-n" })),
               h("span", { class: "bar-track" }, h("span", { class: "bar-fill", style: { width: "0%" } })));
-        if (opts.onToggle) bar.addEventListener("click", () => opts.onToggle(li.dataset.v));
+        if (opts.onToggle) bar.addEventListener("click", () => ul._onToggle && ul._onToggle(li.dataset.v));
         if (opts.fk) bar.dataset.fk = opts.fk + "|" + r.value;
         li = h("li", { dataset: { v: r.value } }, bar);
         tipFor(bar, () => li._tip);

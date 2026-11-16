@@ -7,8 +7,9 @@
   A.pages = A.pages || {};
 
   // ------------------------------------------------------------------
-  // Facts about the review that are not in the workbook. Edit here if the
-  // manuscript changes. Everything else on the site is computed from data.
+  // Facts about the review that are not in the workbook, taken from the
+  // manuscript (draft of November 15, 2026). Edit here if the manuscript
+  // changes. Everything else on the site is computed from the workbook.
   // ------------------------------------------------------------------
   A.review = {
     title: "Benchmarks for Evaluating Generative Large Language Models in Mental Health: A Systematic Review",
@@ -32,8 +33,78 @@
     searchStart: "January 1, 2020",
     searchEnd: "April 26, 2026",
     databases: "PubMed, APA PsycINFO, Web of Science Core Collection, Embase, and arXiv",
+    shortUrl: "https://tinyurl.com/mhbenchmarkatlas",
+    manuscriptDate: "November 15, 2026",
     records: 3454,
     fullText: 751,
+    excludedNoLLM: 90,
+    excludedNotMH: 79,
+    llm: "Claude Sonnet 4.6",
+    // Reliability
+    screeningCalibration: { records: 250, reviewers: 3, kappa: "0.71" },
+    abstractionCheckReports: 25,
+    ratingCheck: {
+      sample: 100, calibration: 40, test: 60,
+      humanHuman: { kappa: "0.84", ci: "0.76–0.92" },
+      humanLLM: { kappa: "0.83", ci: "0.75–0.89" },
+    },
+    // Judge-validation thresholds in the quality rubric
+    judgeAdequate: "0.70",
+    judgeHigh: "0.90",
+    // Table 1 of the manuscript. Counts are computed from the workbook.
+    purposes: [
+      { name: "Screening and detection",
+        scored: "Classification of individuals or their text by symptom, risk, or severity",
+        inputs: "Social media posts or interview transcripts, mostly real-world data",
+        reference: "Clinician or annotator labels; instrument scores or recorded diagnoses (e.g., PHQ-8/9, C-SSRS); proxy labels such as subreddit membership",
+        examples: ["DAIC-WOZ", "Dreaddit", "CSSRS-Suicide", "SDCNL", "DepSeverity", "E-DAIC"] },
+      { name: "Mental health support",
+        scored: "Quality of responses to people seeking support, counseling, or information",
+        inputs: "Help-seeking posts, chat logs, and simulated or live dialogue, often LLM-generated",
+        reference: "Expert or trained annotator ratings, often on therapy-fidelity instruments (e.g., CTRS, MITI)",
+        examples: ["ESConv", "EmpatheticDialogues", "PsyQA", "CPsyCounE", "CounselBench", "MentalChat16K"] },
+      { name: "Knowledge",
+        scored: "Psychiatric knowledge on examination-style questions",
+        inputs: "Multiple-choice items from licensing and board examinations",
+        reference: "Answer key; expert ratings for open-ended answers",
+        examples: ["CounselingBench", "MedQA", "MedMCQA", "USMLE-Mental", "CPsyExam", "PsychiatryBench"] },
+      { name: "Safety",
+        scored: "Recognition and safe handling of high-risk or harm-eliciting input",
+        inputs: "Human-authored or LLM-generated crisis prompts and multi-turn dialogue; rarely real-world data",
+        reference: "Expert or annotator ratings, or none",
+        examples: ["DeepSuiMind", "SHIELD", "MHSafeEval", "SimpleSafetyTests", "HumaneBench"] },
+      { name: "Clinical decision support",
+        scored: "Diagnostic, treatment, or risk reasoning from patient-level case material",
+        inputs: "Clinical vignettes, structured records, clinical notes",
+        reference: "Expert ratings or recorded diagnoses and outcomes",
+        examples: ["MentalBench", "EthicsMH", "DSM-5 Clinical Cases", "Jorm Mental Health Literacy Vignettes"] },
+      { name: "Simulation and judging",
+        scored: "Fidelity of simulated patients; validity of LLM judges",
+        inputs: "Simulated dialogues and personas, with real transcripts or posts as seeds",
+        reference: "Expert ratings; instrument scores for persona fidelity (e.g., HEXACO, BDI-II)",
+        examples: ["VERA-MH", "PsyCLIENT", "PSI-Bench", "TalkDep", "SIRI-2", "EPITOME"] },
+      { name: "Clinical documentation and annotation",
+        scored: "Accuracy of labels or notes produced from clinical or counseling material",
+        inputs: "Session and interview transcripts, almost all real-world data",
+        reference: "Expert codes and ratings, including MISC and MITI coding schemes",
+        examples: ["AnnoMI", "MI-TAGS", "BiMISC", "EXP Scale training-manual transcripts"] },
+      { name: "Equity, fairness, and stigma",
+        scored: "Group differences in performance; stigmatizing or misinformed content",
+        inputs: "Social media posts, vignettes, and prompts with demographic variations",
+        reference: "Expert or annotator labels; ground-truth labels",
+        examples: ["AUTALIC", "MentalMisinfo", "CultureCare", "MHSTIGMAINTERVIEW"] },
+    ],
+    purposeAbbreviations: "C-SSRS, Columbia-Suicide Severity Rating Scale; CTRS, Cognitive Therapy Rating Scale; MISC, Motivational Interviewing Skill Code; MITI, Motivational Interviewing Treatment Integrity; PHQ, Patient Health Questionnaire.",
+  };
+
+  // Find a benchmark record by the short name used in the manuscript:
+  // an exact (case-insensitive) match, or a single record that starts with it.
+  A.findBenchmark = function (label) {
+    const want = label.toLowerCase();
+    const exact = A.B.find((b) => b.name.toLowerCase() === want);
+    if (exact) return exact;
+    const starts = A.B.filter((b) => b.name.toLowerCase().indexOf(want + " ") === 0);
+    return starts.length === 1 ? starts[0] : null;
   };
 
   // ------------------------------------------------------------------
@@ -68,7 +139,7 @@
       const total = B.length;
       const high3 = B.filter((b) => b.flags.high_all3).length;
       const anyPoor = B.filter((b) => b.flags.any_poor).length;
-      const nrOnly = B.filter((b) => b.flags.any_poor && !A.DIMS.some((d) => b.q[d.key].r === "Poor")).length;
+      const refNR = B.filter((b) => b.q.ref.r === "NR").length;
       const reused = B.filter((b) => b.n_studies > 1).length;
       const judged = B.filter((b) => b.flags.llm_judge);
       const judgedCompared = judged.filter((b) => b.judge_compared === "Yes").length;
@@ -93,7 +164,7 @@
       const lenses = [
         { key: "", label: "All benchmarks", test: null, note: n(total) + " benchmarks across " + purposes.length + " evaluation purposes. Darker cells mean higher ratings.", href: "#/benchmarks" },
         { key: "high3", label: "High on all three", test: (b) => b.flags.high_all3, note: n(high3) + " of " + n(total) + " benchmarks (" + share(high3, total) + ") were rated high for inputs, reference standard, and scoring.", href: "#/benchmarks?preset=high3" },
-        { key: "anypoor", label: "Poor on at least one", test: (b) => b.flags.any_poor, note: n(anyPoor) + " benchmarks (" + share(anyPoor, total) + ") were rated poor on at least one of the three" + (nrOnly ? ", counting the " + n(nrOnly) + " whose reference standard was not reported, as the review does." : "."), href: "#/benchmarks?preset=anypoor" },
+        { key: "anypoor", label: "Poor on at least one", test: (b) => b.flags.any_poor, note: n(anyPoor) + " benchmarks (" + share(anyPoor, total) + ") were rated poor on at least one of the three. Another category, a reference standard that was not reported, applies to " + n(refNR) + " and is not counted as poor.", href: "#/benchmarks?preset=anypoor" },
         { key: "reused", label: "Used in 2 or more studies", test: (b) => b.n_studies > 1, note: n(reused) + " benchmarks (" + share(reused, total) + ") were used in more than one study. The other " + n(total - reused) + " appeared once.", href: A.buildHash("benchmarks", { reuse: A.ORDER.reuse.slice(1) }) },
         { key: "judge", label: "Scored by an LLM judge", test: (b) => b.flags.llm_judge, note: n(judged.length) + " benchmarks (" + share(judged.length, total) + ") were scored by an LLM judge. For " + n(judgedCompared) + " of them, a study compared the judge with human raters.", href: A.buildHash("benchmarks", { judge: ["Scored by an LLM judge"] }) },
         { key: "llmgen", label: "Includes LLM-generated items", test: (b) => b.material.includes("LLM-generated material"), note: n(llmgen) + " benchmarks (" + share(llmgen, total) + ") include material generated by an LLM.", href: A.buildHash("benchmarks", { material: ["LLM-generated material"] }) },
@@ -149,7 +220,7 @@
         h("section", { class: "ov-sec", "aria-labelledby": "ov-reuse-h" },
           h("div", { class: "wrap" },
             h("h2", { class: "ov-h2", id: "ov-reuse-h" }, "How often benchmarks were reused"),
-            h("p", { class: "ov-p" }, n(once) + " of " + n(total) + " benchmarks (" + share(once, total) + ") appeared in only one study, and " + n(fivePlus) + " were used in five or more. Reuse is what lets results be compared across models and studies."),
+            h("p", { class: "ov-p" }, n(once) + " of " + n(total) + " benchmarks (" + share(once, total) + ") appeared in only one study, and " + n(fivePlus) + " were used in five or more. Reuse makes it possible to compare results across models and studies, although the review found that reused benchmarks were often implemented inconsistently."),
             h("div", { class: "ov-split ov-reuse" },
               h("div", { class: "ov-col" }, h("h3", { class: "ov-h3" }, "Benchmarks by number of studies using them"), reuseCols),
               h("div", { class: "ov-col" }, h("h3", { class: "ov-h3" }, "The most used named benchmarks"), topBars)))));
@@ -298,15 +369,22 @@
       const R = A.review;
       const B = A.B;
       const S = A.S;
+      const self = this;
+      this._sub = route && route.sub && route.sub[0];
       const preprints = S.filter((s) => s.source_type === "Preprint").length;
       const verifiedLinks = S.filter((s) => s.link && s.link.verified).length;
       const manualLinks = S.filter((s) => s.link && s.link.manual).length;
+      const nr = B.filter((b) => b.q.ref.r === "NR").length;
+      const na = B.filter((b) => b.q.ref.r === "NA").length;
+      const RC = R.ratingCheck;
       const sections = [
         ["about", "About the review"],
         ["benchmark", "What counts as a benchmark"],
+        ["purposes", "Evaluation purposes"],
         ["search", "How studies were found"],
         ["abstraction", "What was recorded"],
         ["quality", "How quality was rated"],
+        ["agreement", "Rater agreement"],
         ["multi", "Benchmarks used in several studies"],
         ["links", "Paper links"],
         ["fields", "Field definitions"],
@@ -321,55 +399,104 @@
         if (!a) return;
         e.preventDefault();
         history.replaceState(null, "", a.getAttribute("href"));
+        self._sub = a.dataset.target;
         scrollToId(a.dataset.target);
       });
 
       const P = (...kids) => h("p", null, kids);
       const H2 = (id, t) => h("h2", { id: id, tabindex: "-1" }, t);
-      const rubric = h("div", { class: "table-wrap", tabindex: "0", role: "region", "aria-label": "Quality rubric table" },
-        h("table", { class: "doc-table" },
-          h("caption", { class: "sr-only" }, "Quality rubric"),
-          h("thead", null, h("tr", null, h("th", { scope: "col" }, "Dimension"), h("th", { scope: "col" }, "Rated on"), h("th", { scope: "col" }, "High requires"), h("th", { scope: "col" }, "Poor reflects"))),
-          h("tbody", null,
-            h("tr", null, h("th", { scope: "row" }, "Inputs"),
-              h("td", null, "Their source, independent validation, and the expertise of the people who created or annotated them."),
-              h("td", null, "The strongest option on every criterion."),
-              h("td", null, "A disqualifying weakness, such as LLM-generated items with no reported expert verification, or labels inferred from forum membership or self-report rather than clinical assessment.")),
-            h("tr", null, h("th", { scope: "row" }, "Reference standard"),
-              h("td", null, "Its basis in a validated instrument, recorded outcome, or established framework; who produced and verified it; and its fit with the construct being measured."),
-              h("td", null, "The strongest option on every criterion, for example a clinician-produced standard anchored to a validated instrument."),
-              h("td", null, "Proxy labels, such as subreddit membership, or labelers whose qualifications were not described.")),
-            h("tr", null, h("th", { scope: "row" }, "Scoring"),
-              h("td", null, "Fit between metric and task, transparency, and validation of the human, LLM, or automated judgment."),
-              h("td", null, "The strongest option on every criterion, for example a judge validated against expert raters."),
-              h("td", null, "Text similarity metrics, or LLM judges and classifiers not validated against human judgment.")))));
+      // Explicit roles keep the table semantics when narrow screens stack
+      // the rows (CSS display changes can otherwise drop them).
+      const table = (label, head, rows, cls) =>
+        h("div", { class: "table-wrap", tabindex: "0", role: "region", "aria-label": label },
+          h("table", { class: "doc-table" + (cls ? " " + cls : ""), role: "table" },
+            h("caption", { class: "sr-only" }, label),
+            h("thead", { role: "rowgroup" }, h("tr", { role: "row" }, head.map((c) => h("th", { scope: "col", role: "columnheader" }, c)))),
+            h("tbody", { role: "rowgroup" }, rows.map((r) => h("tr", { role: "row" }, h("th", { scope: "row", role: "rowheader" }, r[0]), r.slice(1).map((c, i) => h("td", { role: "cell", dataset: { label: head[i + 1] } }, c)))))));
+
+      // Evaluation purposes (Table 1), with live counts and linked examples
+      const purposeList = h("dl", { class: "purposes" }, R.purposes.map((pp) => {
+        const count = B.filter((b) => b.purpose === pp.name).length;
+        const examples = pp.examples.map((ex, i) => {
+          const rec = A.findBenchmark(ex);
+          return [i ? ", " : "", rec ? h("a", { class: "val-link", href: A.openHref("b:" + rec.id) }, ex) : ex];
+        });
+        return h("div", { class: "purpose-row" },
+          h("dt", null,
+            h("span", { class: "purpose-name" }, pp.name),
+            h("a", { class: "purpose-n", href: A.buildHash("benchmarks", { purpose: [pp.name] }) }, n(count) + " benchmarks (" + share(count, B.length) + ")")),
+          h("dd", null,
+            h("p", null, h("span", { class: "purpose-k" }, "What is scored. "), pp.scored + "."),
+            h("p", null, h("span", { class: "purpose-k" }, "Typical inputs. "), pp.inputs + "."),
+            h("p", null, h("span", { class: "purpose-k" }, "Typical reference standard. "), pp.reference + "."),
+            h("p", null, h("span", { class: "purpose-k" }, "Examples. "), examples, ".")));
+      }));
+
+      const rubric = table("Quality rubric",
+        ["Component", "Rated on", "A poor rating most often reflected"],
+        [
+          ["Inputs", "Their source, the expertise of the people who created them, and independent validation.",
+            "Items written, collected, or generated by an LLM for the study without any reported review."],
+          ["Reference standard", "Who produced it; its basis in a validated instrument, recorded clinical outcome, or established framework; its alignment with the construct being measured; and whether it was verified.",
+            "Proxy labels, such as subreddit membership, or labels produced by an LLM without human review."],
+          ["Scoring", "Fit between the metric and the task, transparency, and validation of any human, LLM, or automated judge.",
+            "A human, LLM, or classifier judge whose agreement with human raters was low or not reported."],
+        ], "doc-table-stack");
+
+      const thresholds = table("Judge validation thresholds",
+        ["Agreement with human raters", "Judge validation rated"],
+        [
+          [R.judgeHigh + " or greater", [h("span", { class: "q q-High", "aria-hidden": "true" }), " High"]],
+          ["At least " + R.judgeAdequate + " but below " + R.judgeHigh, [h("span", { class: "q q-Adequate", "aria-hidden": "true" }), " Adequate"]],
+          ["Below " + R.judgeAdequate + ", percent agreement only, or no comparison with human raters", [h("span", { class: "q q-Poor", "aria-hidden": "true" }), " Poor"]],
+        ], "doc-table-compact");
+
+      const agreement = table("Rater agreement",
+        ["Check", "Agreement", "95% CI"],
+        [
+          ["Title and abstract screening: " + R.screeningCalibration.reviewers + " reviewers, calibration set of " + n(R.screeningCalibration.records) + " records", "κ = " + R.screeningCalibration.kappa, "Not reported"],
+          ["Quality ratings: two human raters, " + RC.test + " test benchmarks", "κ = " + RC.humanHuman.kappa, RC.humanHuman.ci],
+          ["Quality ratings: human raters and the LLM-assisted workflow, " + RC.test + " test benchmarks", "κ = " + RC.humanLLM.kappa, RC.humanLLM.ci],
+        ], "doc-table-compact");
 
       const gloss = (rows) => h("dl", { class: "gloss" }, rows.map(([k, v]) => h("div", { class: "gloss-row" }, h("dt", null, k), h("dd", null, v))));
 
       const prose = h("div", { class: "prose" },
         H2("about", "About the review"),
-        P("This atlas presents the full data from a systematic review of benchmarks used to evaluate generative large language models (LLMs) in mental health. The review characterizes the benchmarks and rates the quality of their inputs, reference standards, and scoring. It does not compare the performance of models, because the benchmarks differ too widely in tasks, inputs, and metrics."),
+        P("This atlas presents the benchmark-level and study-level data from a systematic review of benchmarks used to evaluate generative large language models (LLMs) in mental health. The review characterizes the benchmarks and rates the quality of their inputs, reference standards, and scoring procedures. It describes the benchmarks themselves, not how well particular models perform on them."),
         P("The review followed the PRISMA reporting guideline. The Harvard Pilgrim Health Care Institute institutional review board deemed it exempt."),
 
         H2("benchmark", "What counts as a benchmark"),
-        P("A benchmark is a structured test of an LLM with four parts: a fixed set of inputs (prompts, questions, or tasks), a reference standard or other structured basis for judgment, a relevant evaluation domain, and a replicable scoring procedure. A study contributed more than one benchmark when it used more than one distinct set of inputs."),
-        P("Benchmark names were harmonized so that each benchmark is counted once. Unnamed item sets assembled by study authors count as benchmarks and carry a descriptive label in the form “material: scope (first author year).” Each benchmark was assigned one evaluation purpose based on its evaluation constructs, its input format, and the task given to the model."),
+        P("A benchmark is a structured test of an LLM with three parts: standardized inputs (a fixed set of prompts, questions, or tasks), a reference standard or other basis for judgment, and a replicable scoring procedure. The unit of analysis is the benchmark. A study contributed more than one benchmark when it used more than one distinct set of inputs."),
+        P("Benchmark names were harmonized so that each benchmark is counted once. Unnamed item sets assembled by study authors count as benchmarks and carry a descriptive label ending in the first author and year, such as “Bipolar depression vignettes (Perlis 2024).”"),
+
+        H2("purposes", "Evaluation purposes"),
+        P("Each benchmark was assigned one evaluation purpose based on its constructs, its input format, and the task given to the model. The purposes are described below, following Table 1 of the review; counts are from the current data. Fairness audits of existing screening benchmarks were counted under those benchmarks' primary purpose."),
+        purposeList,
+        h("p", { class: "doc-note" }, "Input and reference standard categories are not mutually exclusive. " + R.purposeAbbreviations),
 
         H2("search", "How studies were found"),
-        P(R.databases + " were searched for reports published from " + R.searchStart + ", through " + R.searchEnd + ", supplemented by screening reference lists. The search combined terms for generative AI, LLMs, and conversational agents; mental health conditions, distress, well-being, counseling and psychotherapy, emotional support, and suicide, self-harm, or crisis; and benchmarking, evaluation, and performance assessment."),
-        P("Eligible reports, peer reviewed or gray literature in English, evaluated a generative LLM in a mental health application, including benchmark development papers without model results, and assessed at least one clinically relevant domain such as diagnostic accuracy, psychiatric knowledge, safety, empathy, or equity. General medical benchmarks were eligible when mental health results were reported separately, and only the mental health portion was abstracted. Reviews, nongenerative models, and evaluations limited to technical performance, language quality, or user satisfaction were excluded."),
-        P("Of " + n(R.records) + " deduplicated records, " + n(R.fullText) + " full-text reports were assessed and " + n(S.length) + " studies were included, using " + n(B.length) + " unique benchmarks. Two reviewers screened every record independently at each stage, and a third resolved disagreements. An LLM-based tool organized full-text information for eligibility, but every inclusion decision was made by human reviewers."),
+        P(R.databases + " were searched for reports published from " + R.searchStart + ", through " + R.searchEnd + ", supplemented by screening reference lists. The search strategy, developed with clinical and technical experts, combined terms for generative AI, LLMs, and conversational agents; mental health conditions, distress, well-being, counseling, psychotherapy, emotional support, suicide, self-harm, and crisis; and benchmarking, evaluation, and performance assessment. The full strategy is in eTable 1 of the review's supplement."),
+        P("Eligible reports, peer reviewed or gray literature in English, evaluated a generative LLM in a mental health application, including benchmark papers without model results, and assessed at least one clinically relevant domain such as diagnostic accuracy, psychiatric knowledge, safety, empathy, or equity. General medical benchmarks were eligible when mental health results were reported separately, and only the mental health portion was abstracted. Reviews, nongenerative models, and evaluations limited to technical performance, language quality, or user satisfaction were excluded."),
+        P("Records were deduplicated and screened in Covidence. Three reviewers independently screened a calibration set of " + n(R.screeningCalibration.records) + " titles and abstracts (κ = " + R.screeningCalibration.kappa + "). The remaining records were screened independently by two reviewers at each stage, with disagreements resolved by consensus with a third. " + R.llm + " organized full-text information relevant to eligibility, but every inclusion decision was made by human reviewers."),
+        P("The search identified " + n(R.records) + " deduplicated records. Of " + n(R.fullText) + " full-text reports assessed, " + n(R.fullText - S.length) + " were excluded, most often because no LLM was evaluated (" + R.excludedNoLLM + ") or the study was unrelated to mental health (" + R.excludedNotMH + "). The final sample is " + n(S.length) + " studies using " + n(B.length) + " unique benchmarks. The flow diagram is eFigure 1 of the supplement."),
 
         H2("abstraction", "What was recorded"),
         P("A structured form captured study-level and benchmark-level characteristics in four areas: purpose (domain, task, and evaluation constructs), inputs (material type, source, language, population, and availability), reference standard (type, provenance, and any validated instrument), and scoring (method and judge validation)."),
-        P("Abstraction used an LLM-assisted workflow (Claude Sonnet 4.6, temperature 0) whose outputs were checked against a predefined schema, controlled vocabularies, and logic rules. Two authors verified every field and rating for an initial 25 reports against the source and the rubric, with a third adjudicating, and the workflow was refined until its output matched the corrected abstraction. For the remaining reports, one author verified every field, rating, and flagged value against the source. In an independent rerun of 10 randomly selected studies (26 benchmarks), agreement on quality ratings was 92% for inputs, 92% for reference standards, and 100% for scoring, with no disagreement larger than one category."),
+        P("A structured workflow using " + R.llm + " (Anthropic API; temperature 0) assisted data abstraction and quality rating; it is described in eMethods 1 and eAppendices 3 and 4 of the supplement. Two authors verified every abstracted field for an initial " + R.abstractionCheckReports + " reports, with a third adjudicating, and refined the workflow until its output matched the corrected abstraction. How well the quality ratings agree with human raters is described under ", h("a", { href: "#/methods/agreement", "data-target": "agreement", class: "js-jump" }, "Rater agreement"), "."),
 
         H2("quality", "How quality was rated"),
-        P("No validated appraisal tool exists for AI benchmarks, so the review used its own rubric. Each benchmark's inputs, reference standard, and scoring were rated poor, adequate, or high. A high rating required the strongest option on every criterion; a poor rating reflected a disqualifying weakness; adequate covers everything in between."),
+        P("No validated appraisal tool exists for LLM benchmarks, so the review developed a rubric that adapts the logic of diagnostic accuracy appraisal (QUADAS-2) to machine learning evaluation. Each benchmark's inputs, reference standard, and scoring procedure were rated poor, adequate, or high against a set of criteria. A component was rated high if every criterion was rated high, poor if any criterion was rated poor, and adequate otherwise. The full rubric is in eMethods 1 of the supplement."),
         rubric,
-        P("An LLM judge's validation counted as high when agreement with human raters on the same outputs reached κ ≥ 0.40 for categorical ratings or a correlation of at least 0.50 for continuous ratings, and was capped at adequate when the judge shared a model family with a system it evaluated."),
-        P("Two further values appear for the reference standard. ", h("em", null, "No reference standard"), " (shown hatched) means no study compared outputs with a human judgment or ground-truth value. ", h("em", null, "Not reported"), " (shown in grey) means the studies described neither who produced the labels, what they were based on, nor whether they were checked."),
-        P("The atlas's quality presets combine the three ratings. ", h("em", null, "High on all three"), " requires a high rating for every dimension. ", h("em", null, "Poor on at least one"), " counts any dimension rated poor, and treats a reference standard rated not reported as poor, as the review's summary statistics do. ", h("em", null, "No poor ratings"), " is everything else, including benchmarks without a reference standard. The atlas does not combine the ratings into a single score."),
+        P("When a human, LLM, or automated judge scored the outputs, its validation was rated by its agreement with human raters, measured by κ, α, the intraclass correlation, or a correlation coefficient. An LLM judge from the same model family as a system it evaluated was capped at adequate."),
+        thresholds,
+        P("The separate ", h("em", null, "judge–human agreement"), " field describes what each comparison showed using a lower, moderate-or-better threshold (κ ≥ 0.40, or r, ρ, or ICC ≥ 0.50, on most dimensions). A judge can meet that threshold and still have its scoring rated adequate or poor."),
+        P("Two further values appear for the reference standard. ", h("em", null, "Not reported"), " (shown dotted) is used for third-party material the report does not describe: all " + n(nr) + " such benchmarks reuse an existing dataset whose labeling the report under review did not describe. It is a separate category, not a poor rating. ", h("em", null, "No reference standard"), " (shown hatched) marks the " + n(na) + " benchmarks without a human or ground-truth reference standard. The review gives reference standard percentages out of the " + n(B.length - na) + " benchmarks that have one; the atlas shows them out of all " + n(B.length) + ", with no reference standard as its own category."),
+        P("The atlas's quality presets combine the three ratings. ", h("em", null, "High on all three"), " requires a high rating for every component. ", h("em", null, "Poor on at least one"), " counts any component rated poor; a reference standard marked not reported is not counted as poor. ", h("em", null, "No poor ratings"), " is everything else, including benchmarks without a reference standard or with one not reported. The atlas does not combine the ratings into a single score."),
+
+        H2("agreement", "Rater agreement"),
+        P("To check the quality ratings, two authors independently rated a stratified random sample of " + RC.sample + " benchmarks. The first " + RC.calibration + " were used to calibrate the raters and refine the rubric. On the remaining " + RC.test + " test benchmarks, agreement between the two human raters was κ = " + RC.humanHuman.kappa + " (95% CI, " + RC.humanHuman.ci + "), and agreement between the human raters and the LLM-assisted workflow was κ = " + RC.humanLLM.kappa + " (95% CI, " + RC.humanLLM.ci + "). Details are in eMethods 2 of the review's supplement."),
+        agreement,
 
         H2("multi", "Benchmarks used in several studies"),
         P("For benchmarks used in more than one study, fixed characteristics and quality ratings take the most common value across the studies. Where any study gave a lower rating, the record notes the lowest. Characteristics that can vary between studies, such as the scoring method or reference standard, list every value any study reported, and the evaluation construct lists every tied value when studies were split evenly."),
@@ -388,10 +515,19 @@
         gloss(A.glossary.study),
 
         H2("limits", "Limitations"),
-        P("Only English-language reports were included, and the ACL Anthology was not searched because its interface could not support structured searching, so some computational linguistics benchmarks may be missing. " + n(preprints) + " of the studies (" + share(preprints, S.length) + ") are preprints, which may later change. Abstraction and quality rating used an LLM-assisted workflow; despite human verification and high agreement between independent runs, judgment-dependent fields may be less reliable than duplicate human abstraction. Quality ratings describe benchmarks as instruments, not how each study implemented them, and the atlas describes benchmarks, not model performance. Benchmarks released after " + R.searchEnd + ", are not included."),
+        P("Only English-language reports were included, and the ACL Anthology was not searched because its interface could not support structured analysis, so some computational linguistics benchmarks may be missing. More than half of the included studies (" + n(preprints) + ", " + share(preprints, S.length) + ") are preprints, which may later be updated. Data abstraction and quality rating used an LLM-assisted workflow; although the ratings were validated against human raters and the abstraction was verified, judgment-dependent fields may be less reliable than duplicate human review. Quality ratings assess benchmarks as instruments rather than how each study implemented them, and the review characterizes benchmarks rather than model performance. The field is evolving rapidly, and benchmarks released after " + R.searchEnd + ", are not included."),
 
         H2("version", "Data version"),
-        P("Built from ", h("strong", null, A.meta.workbook), A.meta.workbook_modified ? ", last saved " + new Date(A.meta.workbook_modified).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "", ". The atlas was generated on " + new Date(A.meta.built).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) + ". ", h("a", { href: "#/about/downloads" }, "Download the data"), "."));
+        P("Built from ", h("strong", null, A.meta.workbook), A.meta.workbook_modified ? ", last saved " + A.fmtDate(A.meta.workbook_modified) : "", ". The descriptive text follows the manuscript draft of " + R.manuscriptDate + ". The atlas was generated on " + A.fmtDate(A.meta.built) + ". ", h("a", { href: "#/about/downloads" }, "Download the data"), "."));
+
+      prose.addEventListener("click", (e) => {
+        const a = e.target.closest("a.js-jump");
+        if (!a) return;
+        e.preventDefault();
+        history.replaceState(null, "", a.getAttribute("href"));
+        self._sub = a.dataset.target;
+        scrollToId(a.dataset.target);
+      });
 
       root.appendChild(
         h("div", { class: "doc" },
@@ -399,10 +535,14 @@
             h("h1", { class: "doc-title", tabindex: "-1" }, "Methods"),
             h("p", { class: "doc-lede" }, "How the review found, recorded, and appraised the studies and benchmarks shown in this atlas.")),
           h("div", { class: "doc-grid" }, toc, prose)));
-      if (route && route.sub && route.sub[0]) setTimeout(() => scrollToId(route.sub[0]), 30);
+      if (this._sub) setTimeout(() => scrollToId(this._sub), 30);
     },
     update(route) {
-      if (route.sub && route.sub[0]) scrollToId(route.sub[0]);
+      // Scroll only when the section in the address changes, not when a
+      // record panel opens or closes on top of the page.
+      const sub = route.sub && route.sub[0];
+      if (sub && sub !== this._sub) scrollToId(sub);
+      this._sub = sub;
     },
   };
 
@@ -423,18 +563,20 @@
     mount(root, route) {
       A.clear(root);
       const R = A.review;
+      const self = this;
+      this._sub = route && route.sub && route.sub[0];
       const authorList = h("p", { class: "authors" },
         R.authors.map(([name, aff], i) => [i ? ", " : "", name, h("sup", null, aff.join(","))]));
       const affList = h("ol", { class: "affs" }, R.affiliations.map((a) => h("li", null, a)));
       const citeBox = h("div", { class: "cite" },
         h("p", { class: "cite-text" }, R.citation),
         h("button", { class: "btn btn-secondary", type: "button", onclick: () => A.copy(R.citation, "Citation copied") }, A.iconEl("copy"), "Copy citation"));
-      const asOf = A.meta.workbook_modified ? new Date(A.meta.workbook_modified).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : null;
-      const atlasCite = "Benchmark Atlas: LLM benchmarks in mental health. " + A.absoluteUrl("#/") + (asOf ? ". Data as of " + asOf : "") + ". Accessed " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) + ".";
+      const asOf = A.fmtDate(A.meta.workbook_modified) || null;
+      const atlasCite = "Benchmark Atlas: LLM benchmarks in mental health. " + (R.shortUrl || A.absoluteUrl("#/")) + (asOf ? ". Data as of " + asOf : "") + ". Accessed " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) + ".";
       const files = [
         ["downloads/benchmarks.csv", "Benchmarks (CSV)", "One row per benchmark with every field, the studies that used it, and its quality ratings."],
         ["downloads/studies.csv", "Studies (CSV)", "One row per study with its benchmarks, models, and a link to the paper."],
-        ["downloads/atlas-workbook.xlsx", "Original workbook (Excel)", "The supplementary tables exactly as abstracted, with the review's footnotes."],
+        ["downloads/atlas-workbook.xlsx", "Source workbook (Excel)", "The review's benchmark and study tables, as provided by the authors, that this atlas is built from."],
       ];
       const aboutSecs = [["about", "Why an atlas"], ["authors", "Authors"], ["cite", "How to cite"], ["downloads", "Download the data"], ["corrections", "Corrections"], ["credits", "Credits"]];
       const toc = h("nav", { class: "doc-toc", "aria-label": "On this page" },
@@ -445,6 +587,7 @@
         if (!a) return;
         e.preventDefault();
         history.replaceState(null, "", a.getAttribute("href"));
+        self._sub = a.dataset.target;
         scrollToId(a.dataset.target);
       });
       root.appendChild(
@@ -456,7 +599,7 @@
             toc,
             h("div", { class: "prose" },
               h("h2", { id: "about", tabindex: "-1" }, "Why an atlas"),
-              h("p", null, "Systematic reviews usually present their included studies as a table in the article or an appendix. This review includes " + n(A.S.length) + " studies and " + n(A.B.length) + " benchmarks, too many to read that way, so the atlas lets you filter, chart, and cross-reference them instead. Every count and chart is computed from the review's supplementary data; the few facts about the search and the verification process on the Methods page come from the manuscript."),
+              h("p", null, "Systematic reviews usually present their included studies as a table in the article or an appendix. This review includes " + n(A.S.length) + " studies and " + n(A.B.length) + " benchmarks, too many to read that way, so the atlas lets you filter, chart, and cross-reference them instead. Every count and chart is computed from the review's data; the facts about the search, the rating rubric, and rater agreement on the Methods page come from the manuscript."),
               h("h2", { id: "authors", tabindex: "-1" }, "Authors"),
               authorList,
               affList,
@@ -474,10 +617,12 @@
               h("p", null, "Spotted an error, or know of a benchmark the review missed? Email the corresponding author, " + R.contact.name + ", at ", h("a", { href: "mailto:" + R.contact.email }, R.contact.email), "."),
               h("h2", { id: "credits", tabindex: "-1" }, "Credits"),
               h("p", null, "Set in Newsreader by Production Type and Public Sans by the U.S. Web Design System, both under the SIL Open Font License. The atlas uses no tracking or cookies.")))));
-      if (route && route.sub && route.sub[0]) setTimeout(() => scrollToId(route.sub[0]), 30);
+      if (this._sub) setTimeout(() => scrollToId(this._sub), 30);
     },
     update(route) {
-      if (route.sub && route.sub[0]) scrollToId(route.sub[0]);
+      const sub = route.sub && route.sub[0];
+      if (sub && sub !== this._sub) scrollToId(sub);
+      this._sub = sub;
     },
   };
 })();

@@ -54,6 +54,8 @@
     variability: ["Variability across repeated runs reported", "Single run, generation settings reported", "Not reported", "Not applicable (no LLM runs reported)"],
     access: ["API", "Chat user interface", "Not reported"],
     agreement: ["Met threshold", "Met threshold on some dimensions", "Below threshold", "Poor agreement shown, no coefficient", "Percent agreement or match rate only", "Qualitative comparison only", "Not compared"],
+    // Strongest comparators first; the two "no comparator" values last.
+    reftype: ["Expert or clinician ratings", "Answer key or recorded value", "Trained annotator ratings", "Pre-existing dataset labels (labelers not described)", "Proxy labels (subreddit, hashtag, self-declared)", "No comparator for some outputs", "No human or ground-truth comparator"],
   };
   A.ORDER = ORDER;
 
@@ -83,8 +85,8 @@
 
   A.benchmarkPresets = [
     { value: "high3", label: "High on all three", help: "Rated high for inputs, reference standard, and scoring.", test: (b) => b.flags.high_all3 },
-    { value: "nopoor", label: "No poor ratings", help: "No dimension rated poor, and the reference standard, if any, was reported. Benchmarks without a reference standard are included.", test: (b) => !b.flags.any_poor },
-    { value: "anypoor", label: "Poor on at least one", help: "At least one dimension rated poor, or a reference standard rated not reported, which the review counts as poor.", test: (b) => b.flags.any_poor },
+    { value: "nopoor", label: "No poor ratings", help: "No component rated poor. Benchmarks without a reference standard, or with one marked not reported, are included.", test: (b) => !b.flags.any_poor },
+    { value: "anypoor", label: "Poor on at least one", help: "At least one component rated poor. A reference standard marked not reported is a separate category and is not counted as poor.", test: (b) => b.flags.any_poor },
   ];
 
   A.benchmarkFacets = [
@@ -108,7 +110,7 @@
     { key: "size", group: "inputs", label: "Size", values: (b) => [b.size_bin], order: ORDER.size },
     { key: "availability", group: "inputs", label: "Availability of inputs", values: (b) => b.availability },
 
-    { key: "reftype", group: "reference", label: "Reference standard type", values: (b) => b.ref_types },
+    { key: "reftype", group: "reference", label: "Reference standard type", values: (b) => b.ref_types, order: ORDER.reftype },
     { key: "instrumented", group: "reference", label: "Validated instrument", values: (b) => yes(b.flags.validated_instrument, "Anchored to a validated instrument", "No validated instrument") },
     { key: "instrument", group: "reference", label: "Instrument", values: (b) => b.instruments, limit: 6, search: "Find an instrument" },
 
@@ -166,8 +168,8 @@
     { key: "variability", group: "models", label: "Run-to-run variability", values: (s) => [s.variability], order: ORDER.variability },
 
     { key: "construct", group: "evaluation", label: "Primary evaluation construct", values: (s) => s.constructs, limit: 7 },
-    { key: "judge", group: "evaluation", label: "LLM judge in this study", values: (s) => yes(s.llm_judge, "Used an LLM judge", "No LLM judge") },
-    { key: "scoring", group: "evaluation", label: "Scoring methods of benchmarks used", values: (s) => s.scoring },
+    { key: "scoring", group: "evaluation", label: "Scoring method", values: (s) => s.scoring },
+    { key: "judge", group: "evaluation", label: "LLM judge", values: (s) => yes(s.llm_judge, "Used an LLM judge", "No LLM judge") },
   ];
 
   A.studySearchText = (s) =>
@@ -327,14 +329,14 @@
   // ------------------------------------------------------------------
   A.glossary = {
     benchmark: [
-      ["Benchmark", "The benchmark's published name. Unnamed item sets assembled by study authors were given a descriptive label in the form \"material: scope (first author year)\"."],
+      ["Benchmark", "The benchmark's published name. Unnamed item sets assembled by study authors were given a descriptive label ending in the first author and year, such as \"Bipolar depression vignettes (Perlis 2024)\"."],
       ["Evaluation purpose", "The single purpose each benchmark was assigned, based on its evaluation constructs, input format, and the task given to the model."],
       ["Primary evaluation construct", "What the benchmark measures, such as diagnostic accuracy or empathy. When studies were evenly split, every tied construct is listed."],
       ["Condition or focus", "The mental health conditions or areas of focus the inputs address."],
       ["Studies using the benchmark", "The included studies that used the benchmark, and the years they were published."],
       ["Parent benchmarks", "Existing benchmarks this one was built from, for example by subsetting, translation, or reannotation."],
       ["Input format", "The form the benchmark's items take, such as social media posts, clinical vignettes, or multiple-choice questions."],
-      ["Type of input material", "Whether items are real-world data, written by people for the benchmark, or generated by an LLM."],
+      ["Type of input material", "Whether items are real-world data, written by people (for the benchmark or for an existing exam, instrument, or dataset), or generated by an LLM."],
       ["Source of input", "Whether items were assembled for the benchmark, taken from an existing dataset, instrument, or exam, or both."],
       ["Conversation type", "Whether the model answers single prompts or takes part in multi-turn conversations."],
       ["Languages", "The languages of the benchmark's items."],
@@ -343,14 +345,14 @@
       ["Intended audience", "Whom the benchmark's results are meant to inform."],
       ["Size", "The number of items. A footnote letter gives the source of the figure: (a) the benchmark's source documentation, (b) the study that introduced it, (c) a single study with no modification stated, (d) a single study scoring a stated subset, (e) the largest size reported by any study, with the source size unconfirmed."],
       ["Availability of inputs", "Whether the items can be obtained: publicly released, available on request, fully or partially specified in the paper, or not available."],
-      ["Reference standard type", "What model outputs are compared against, such as expert or clinician ratings, an answer key, or proxy labels like subreddit membership."],
+      ["Reference standard type", "What model outputs are compared against, such as expert or clinician ratings, an answer key, or proxy labels like subreddit membership. No human or ground-truth comparator means the benchmark had none at all, as counted in the review. When some outputs or studies had a comparator and others did not, the type is listed as no comparator for some outputs."],
       ["Validated instrument", "Validated clinical instruments the reference standard is anchored to, such as the PHQ-9 or C-SSRS."],
-      ["Scoring method", "How outputs are scored: accuracy metrics, human ratings, LLM ratings, text similarity metrics, or other statistics."],
+      ["Scoring method", "How outputs are scored: accuracy metrics, an automated classifier, human ratings, LLM ratings, text similarity metrics, or other statistics such as scale scores or counts."],
       ["LLM judge model family", "The model family of any LLM used to score outputs."],
-      ["Judge compared with human raters", "Whether any study reported agreement, correlation, or a match rate between the LLM judge and human raters on the same outputs."],
-      ["Judge-human agreement", "What that comparison showed. Met threshold means κ ≥ 0.40, or r, ρ, or ICC ≥ 0.50, on most dimensions. The reported statistic gives the figures as published."],
+      ["Judge compared with human raters", "Whether any study compared the LLM judge with human raters, by reporting agreement, a correlation, or a match rate, or by a qualitative comparison."],
+      ["Judge-human agreement", "What that comparison showed. Met threshold means moderate-or-better agreement (κ ≥ 0.40, or r, ρ, or ICC ≥ 0.50) on most dimensions. This describes the comparison; the scoring quality rating applies stricter thresholds (0.70 for adequate, 0.90 for high). The reported statistic gives the figures as published."],
       ["People with lived experience", "Whether people with lived experience of mental health conditions helped create the inputs or the scoring, and whether they co-designed or were consulted."],
-      ["Quality ratings", "Inputs, reference standard, and scoring were each rated high, adequate, or poor. For benchmarks used in several studies, the rating shown is the most common one, with the lowest rating any study received noted where it differs."],
+      ["Quality ratings", "Inputs, reference standard, and scoring were each rated high, adequate, or poor against the review's rubric: high if every criterion was rated high, poor if any criterion was rated poor, and adequate otherwise. A reference standard can also be not reported (a reused dataset whose labeling the studies did not describe in enough detail to rate) or absent. For benchmarks used in several studies, the rating shown is the most common one, with the lowest rating any study received noted where it differs."],
       ["Source documentation", "Where the benchmark is documented: its own paper or repository (cited source), the included study that introduced it, or the study that describes an unnamed item set."],
     ],
     study: [
@@ -365,7 +367,7 @@
       ["Model access", "How the models were run: through an API, a chat interface, or not reported."],
       ["Run-to-run variability", "Whether the study repeated the same test and reported variation in model outputs, stated only the generation settings that control variation (for example temperature), or reported neither."],
       ["Primary evaluation constructs", "The constructs the study's benchmarks measured, listed across all benchmarks the study used."],
-      ["Scoring methods of benchmarks used", "The scoring methods recorded for the benchmarks the study used. Because benchmark-level methods are pooled across every study that used a benchmark, this can include methods this particular study did not apply. Use \u201cLLM judge used\u201d for whether this study scored outputs with an LLM."],
+      ["Scoring methods", "How the study scored model outputs, listed across all the benchmarks it used."],
       ["LLM judge used", "Whether any outputs in this study were scored by an LLM."],
     ],
   };

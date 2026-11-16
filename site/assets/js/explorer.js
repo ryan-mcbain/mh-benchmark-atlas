@@ -701,15 +701,20 @@
       sel: st.sel,
       total: this.results.length,
       toggle: (k, v) => self.toggle(k, v),
-      // Add several filters at once (keeps any already selected).
-      add(pairs) {
+      // Add (on = true) or remove several filters at once.
+      setMany(pairs, on) {
         const sel = cloneSel(self.state.sel);
         for (const [k, v] of pairs) {
           const s = sel[k] || new Set();
-          s.add(v);
-          sel[k] = s;
+          if (on) s.add(v);
+          else s.delete(v);
+          if (s.size) sel[k] = s;
+          else delete sel[k];
         }
         self.set({ sel });
+      },
+      add(pairs) {
+        this.setMany(pairs, true);
       },
       facet: (k) => self.facetByKey.get(k),
       engine: self.engine,

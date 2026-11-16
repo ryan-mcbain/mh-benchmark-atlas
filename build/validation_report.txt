@@ -1,11 +1,12 @@
 Mental Health LLM Benchmark Atlas: data build report
-Built: 2026-11-02 14:46
-Workbook: benchmark and study supplementary tables 11.2.xlsx
-Workbook last saved: 2026-11-02T14:49:48Z
-Sheets: eTable 2 Benchmarks, eTable 3 Included studies
+Built: 2026-11-16 16:57
+Workbook: website_tables, 11-15-26.xlsx
+Workbook last saved: 2026-11-15T22:02:42Z
+Sheets: Benchmarks, Studies
 
 Benchmark rows: 453   Study rows: 433
-Footnotes captured: 1 (benchmarks), 1 (studies)
+Age group values given an initial capital for display: 59
+Footnotes captured: 0 (benchmarks), 0 (studies)
 
 LINKS BETWEEN SHEETS
   Studies listing a benchmark that is not in the benchmark sheet: 0
@@ -28,13 +29,13 @@ CONSTRUCT LABELS HARMONIZED (study sheet -> benchmark sheet)
 
 VOCABULARIES (check for typos or near-duplicates)
   Benchmarks / purpose:
-       155  Screening and detection
-       114  Mental health support
+       158  Screening and detection
+       115  Mental health support
         49  Knowledge
         45  Safety
-        39  Clinical decision support
-        25  Simulation and judging
-        15  Clinical documentation and annotation
+        40  Clinical decision support
+        24  Simulation and judging
+        11  Clinical documentation and annotation
         11  Equity, fairness, and stigma
   Benchmarks / constructs:
        141  Diagnostic accuracy
@@ -83,8 +84,8 @@ VOCABULARIES (check for typos or near-duplicates)
         10  Bias
         10  General mental health
          6  Crisis counseling
-         5  Personality disorders
          5  Stigma
+         5  Personality disorders
          5  Misinformation
          4  General psychology
          4  Delusional disorder
@@ -132,8 +133,8 @@ VOCABULARIES (check for typos or near-duplicates)
         12  Spanish
         11  Not reported
         10  German
-         7  Korean
          7  Portuguese
+         7  Korean
          6  Turkish
          6  Japanese
          5  Italian
@@ -146,13 +147,13 @@ VOCABULARIES (check for typos or near-duplicates)
          2  Greek
          1  Dutch
          1  Persian
+         1  Vietnamese
          1  Swedish
          1  Hindi
          1  Cantonese
          1  Danish
-         1  Thai
-         1  Vietnamese
          1  Nigerian Pidgin English
+         1  Thai
   Benchmarks / lang_scope:
        297  English only
        115  Other languages only
@@ -195,16 +196,18 @@ VOCABULARIES (check for typos or near-duplicates)
          4  Method reproducible, items unavailable
   Benchmarks / ref_types:
        247  Expert or clinician ratings
-       119  No human or ground-truth comparator
        116  Answer key or recorded value
         99  Trained annotator ratings
+        92  No comparator for some outputs
+        27  No human or ground-truth comparator
         27  Proxy labels (subreddit, hashtag, self-declared)
          4  Pre-existing dataset labels (labelers not described)
   Benchmarks / scoring:
-       318  Accuracy metrics
-       149  Human ratings or preferences
+       298  Accuracy metrics
+       148  Human ratings or preferences
        106  LLM ratings or preferences
         64  Text similarity metrics
+        32  Automated classifier
         12  Other (scale scores, counts, or distributional statistics)
   Benchmarks / judge_families:
         77  GPT
@@ -230,8 +233,8 @@ VOCABULARIES (check for typos or near-duplicates)
          1  Met threshold on some dimensions
   Benchmarks / lived:
          5  Scoring: consulted
-         4  Inputs: consulted
          4  Inputs: co-design
+         4  Inputs: consulted
          3  Scoring: co-design
          1  Inputs: co-design, consulted
   Benchmarks / reuse_bin:
@@ -306,11 +309,12 @@ VOCABULARIES (check for typos or near-duplicates)
          1  Privacy
          1  Appraisal and coping response prediction
   Studies / scoring:
-       306  Accuracy metrics
-       185  Human ratings or preferences
-       130  LLM ratings or preferences
-       100  Text similarity metrics
-        13  Other (scale scores, counts, or distributional statistics)
+       271  Accuracy metrics
+       151  Human ratings or preferences
+       102  LLM ratings or preferences
+        68  Text similarity metrics
+        30  Automated classifier
+        14  Other (scale scores, counts, or distributional statistics)
   Studies / models_bin:
        131  2 or 3 models
        108  6 to 10 models
@@ -325,14 +329,20 @@ VOCABULARIES (check for typos or near-duplicates)
         11  6 or more benchmarks
 
 QUALITY (modal rating across studies)
-  input    High 52, Adequate 311, Poor 90, NR 0, NA 0
-  ref      High 67, Adequate 321, Poor 29, NR 9, NA 27
-  scoring  High 173, Adequate 185, Poor 95, NR 0, NA 0
-  High on all three: 18
-  Poor on at least one (NR reference standard counted as Poor): 183
+  input    High 38, Adequate 314, Poor 101, NR 0, NA 0
+  ref      High 56, Adequate 274, Poor 54, NR 40, NA 29
+  scoring  High 228, Adequate 65, Poor 160, NR 0, NA 0
+  High on all three: 13
+  Poor on at least one (explicit Poor ratings only): 244
+  Reference standard not reported (NR, a separate category): 40
   Sizes that could not be fully parsed: 624 not found in source documentationᵉ; 1,000 not found in source documentationᶜ; 405 not found in source documentationᵉ; 960 not found in source documentationᵉ; 10,000 ᵃ
 
-Wrote site/assets/data/atlas-data.js (1200 KB)
+REFERENCE STANDARD TYPE
+  'No human or ground-truth comparator' as the only type: 27
+  Listed alongside another type, shown as 'No comparator for some outputs': 92
+  Rated 'no reference standard' but also listing another type: 3 (Expert-augmented ESConv distress cases (Zhao 2026); PsychEthicsBench; Ψ-ARENA)
+
+Wrote site/assets/data/atlas-data.js (1201 KB)
 
 WARNINGS (11)
   - Study 'Hong et al. 2025': the model count column says 4, but 2 models are listed.
