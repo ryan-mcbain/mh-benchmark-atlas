@@ -35,7 +35,7 @@ mh-benchmark-atlas/
 
 The site computes every number from the workbook. Nothing is typed in by hand except facts from the manuscript that the workbook does not hold: the databases and search dates, the search and exclusion counts, the screening and rater-agreement kappas, the judge-validation thresholds, the evaluation-purpose descriptions from Table 1, the author list, and the citation. They are near the top of `site/assets/js/pages.js` under `A.review`, which also records the manuscript draft date shown on the Methods page. Update them when the manuscript changes.
 
-1. Put the new workbook in `data/` and remove the old one. Keep the sheet names (one containing "Benchmark", one containing "stud") and the column headers; the build accepts either a hyphen or an en dash in headers such as "Judge–human agreement". Column order does not matter. Extra columns are allowed and reported as unused.
+1. Put the new workbook in `data/` and remove the old one. Keep the sheet names (one containing "Benchmark", one containing "stud") and the column headers; other sheets, such as a README, are ignored by the build but included in the downloadable copy. The build accepts either a hyphen or an en dash in headers such as "Judge–human agreement". Column order does not matter. Extra columns are allowed and reported as unused.
 2. Run `python3 build/build_data.py`. If you use GitHub Pages, this happens automatically when you upload.
 3. Read `build/validation_report.txt`. It lists every vocabulary with counts, so typos and near-duplicates stand out.
 
@@ -44,9 +44,10 @@ The build **stops with an error and changes nothing** if a required column is mi
 ### What the build does to the data
 
 - **Splits multi-value cells** on semicolons, but not inside parentheses. For example, "Not applicable (knowledge items; no person depicted)" stays one value, as do benchmark names such as "D4 (author-modified; Gu 2024)".
+- **Reads blank cells as empty.** The workbook leaves not-applicable cells blank (earlier versions wrote "NA" or "None"; both are still accepted). Two columns give a blank a meaning: a blank reference standard quality means no reference standard (NA, shown hatched), and a blank intended audience is shown as "Not applicable". A blank input or scoring quality rating is reported as a warning. The report counts each case.
 - **Links studies and benchmarks** using the exact names in "Benchmarks used". Each benchmark's study count is checked against the "Studies using benchmark, No." column.
 - **Harmonizes construct labels** in the study sheet to the benchmark sheet's wording. For example, "Guideline adherence / information quality" becomes "Guideline adherence or information quality", and "Other (cognitive distortion detection)" becomes "Cognitive distortion detection". The report lists every change.
-- **Separates the tie flag:** "(tie across studies)" is removed from construct names and kept as a separate field.
+- **Separates the tie flag:** "(tie across evaluations)" (or the older "(tie across studies)") is removed from construct names and kept as a separate field. Any other tie wording is reported as a warning so it can't slip through as a new construct.
 - **Splits quality ratings:** "High (lowest Adequate)" becomes rating High, lowest Adequate.
 - **Parses sizes** into a number, a unit, and the source footnote letter (a–e).
 - **Separates notes from model lists:** "None (benchmark proposed without model results)" means no models, and bracketed abstractor notes are shown as notes rather than model names.

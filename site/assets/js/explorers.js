@@ -138,20 +138,26 @@
   }
 
   function judgeFunnel(el, items, ctx) {
-    // As in the review, "moderate or better" counts judges that met the
-    // threshold on most dimensions and those that met it on some.
-    const MET = ["Met threshold", "Met threshold on some dimensions"];
+    // As in the review: agreement "reached 0.70 or higher" only when the
+    // median across dimensions did (Met threshold). Judges that reached it on
+    // some dimensions count as below it, with poor agreement shown without a
+    // coefficient; percent-only and qualitative comparisons are a third group.
+    const MET = "Met threshold";
+    const BELOW = ["Met threshold on some dimensions", "Below threshold", "Poor agreement shown, no coefficient"];
+    const WEAK = ["Percent agreement or match rate only", "Qualitative comparison only"];
     const judged = items.filter((b) => b.flags.llm_judge);
     const compared = judged.filter((b) => b.judge_compared === "Yes");
-    const met = judged.filter((b) => MET.includes(b.judge_agreement));
-    const metMost = met.filter((b) => b.judge_agreement === MET[0]).length;
+    const count = (vals) => judged.filter((b) => vals.includes(b.judge_agreement)).length;
+    const met = count([MET]);
+    const below = count(BELOW);
+    const someDims = count([BELOW[0]]);
+    const weak = count(WEAK);
     const sel = (k, v) => !!(ctx.sel[k] && ctx.sel[k].has(v));
-    const metSelected = MET.every((v) => sel("agreement", v));
     A.charts.bars(el, {
       rows: [
         { value: "j", label: "Scored by an LLM judge", count: judged.length, selected: sel("judge", "Scored by an LLM judge") },
         { value: "c", label: "Judge compared with human raters", count: compared.length, selected: sel("judgecompared", "Compared") },
-        { value: "m", label: "Agreement moderate or better", count: met.length, selected: metSelected },
+        { value: "m", label: "Agreement reached 0.70 or higher", count: met, selected: sel("agreement", MET) },
       ],
       max: Math.max(1, judged.length),
       showPct: false,
@@ -161,7 +167,7 @@
       onToggle: (v) => {
         if (v === "j") ctx.toggle("judge", "Scored by an LLM judge");
         else if (v === "c") ctx.toggle("judgecompared", "Compared");
-        else ctx.setMany(MET.map((x) => ["agreement", x]), !metSelected);
+        else ctx.toggle("agreement", MET);
       },
     });
     let foot = el.querySelector(".chart-foot");
@@ -169,9 +175,13 @@
       foot = h("p", { class: "chart-foot" });
       el.appendChild(foot);
     }
-    const metText = met.length === metMost ? A.fmt(met.length) : A.fmt(met.length) + " (on most dimensions for " + A.fmt(metMost) + ", on some for " + A.fmt(met.length - metMost) + ")";
+    const parts = [];
+    parts.push("agreement reached 0.70 or higher for " + A.fmt(met));
+    if (below) parts.push("fell below it for " + A.fmt(below) + (someDims ? " (" + A.fmt(someDims) + " of them reached 0.70 on some dimensions but not at the median)" : ""));
+    if (weak) parts.push("only percent agreement or a qualitative comparison was reported for " + A.fmt(weak));
+    const list = parts.length > 1 ? parts.slice(0, -1).join(", ") + ", and " + parts[parts.length - 1] : parts[0];
     foot.textContent = judged.length
-      ? A.fmt(judged.length) + " of " + A.fmt(items.length) + " benchmarks (" + A.pct(judged.length, items.length) + "%) were scored by an LLM judge. For " + A.fmt(compared.length) + " of them (" + A.pct(compared.length, judged.length) + "%), a study compared the judge with human raters, and agreement was moderate or better (κ ≥ 0.40, or r, ρ, or ICC ≥ 0.50) for " + metText + ". The scoring quality rating is stricter: validation counts as adequate from 0.70 and high from 0.90."
+      ? A.fmt(judged.length) + " of " + A.fmt(items.length) + " benchmarks (" + A.pct(judged.length, items.length) + "%) were scored by an LLM judge. For " + A.fmt(compared.length) + " of them (" + A.pct(compared.length, judged.length) + "%), a study compared the judge with human raters" + (compared.length ? ": " + list : "") + ". The statistic is κ, α, r, ρ, or the intraclass correlation, taken as the median when several dimensions were reported."
       : "";
   }
 
@@ -230,7 +240,7 @@
       ],
       charts: [
         { key: "purpose", title: "Evaluation purpose", render: barsChart("purpose", { unit: "benchmarks" }) },
-        { key: "quality", title: "Quality ratings", note: "Most common rating across the studies that used each benchmark.", render: qualityStack },
+        { key: "quality", title: "Quality ratings", note: "Most common rating across the studies that used each benchmark. Shares are out of all benchmarks shown; the review gives reference standard shares out of those that have one.", render: qualityStack },
         { key: "qbp", title: "Quality by evaluation purpose", wide: true, note: "Share of benchmarks in each purpose with each rating. Select a segment to filter.", render: qualityByPurpose },
         { key: "condition", title: "Condition or focus", note: "A benchmark can address several conditions.", render: barsChart("condition", { top: 12, unit: "benchmarks" }) },
         { key: "construct", title: "Primary evaluation construct", render: barsChart("construct", { top: 12, unit: "benchmarks" }) },
@@ -282,7 +292,7 @@
       "Involvement of people with lived experience", "Input quality", "Reference standard quality", "Scoring quality",
       "Source documentation", "Atlas link"];
     const rows = items.map((b) => [
-      b.name, b.named ? "Yes" : "No", b.purpose, J(b.constructs) + (b.construct_tie ? " (tie across studies)" : ""), J(b.conditions),
+      b.name, b.named ? "Yes" : "No", b.purpose, J(b.constructs) + (b.construct_tie ? " (tie across evaluations)" : ""), J(b.conditions),
       b.n_studies, b.studies.map((id) => A.sById.get(id).label + ", " + A.sById.get(id).title).join("; "), b.first_year, b.last_year,
       J(b.parents.map((p) => p.name)) || "None", J(b.input_formats), J(b.material), b.input_source, b.conversation, J(b.languages),
       J(b.populations), b.age_group, J(b.audiences), b.size ? b.size.raw : "Not reported", J(b.availability), J(b.ref_types),

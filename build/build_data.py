@@ -350,7 +350,7 @@ def table_from_sheet(rows, cols, sheet_name):
 # --------------------------------------------------------------------------
 # Field-specific parsing
 # --------------------------------------------------------------------------
-TIE_RE = re.compile(r"\s*\(tie across studies\)\s*$", re.I)
+TIE_RE = re.compile(r"\s*\(tie across (?:studies|evaluations)\)\s*$", re.I)
 QUALITY_RE = re.compile(r"^(High|Adequate|Poor|NR|NA)(?:\s*\(lowest\s+(High|Adequate|Poor)\))?$", re.I)
 SIZE_RE = re.compile(r"^([\d][\d,\.]*)\s*(.*?)\s*([ᵃᵇᶜᵈᵉ]*)\s*$")
 SUPERSCRIPT = {"ᵃ": "a", "ᵇ": "b", "ᶜ": "c", "ᵈ": "d", "ᵉ": "e"}
@@ -359,9 +359,14 @@ SRC_PREFIX_RE = re.compile(r"(Cited source|Introduced in|Described in):\s*")
 NONE_TOKENS = {"none", "na", "n/a", "none reported", "not applicable"}
 
 
-def parse_quality(v, field, name):
+def parse_quality(v, field, name, blank=None):
+    """'High (lowest Adequate)' -> {'r': 'High', 'low': 'Adequate'}. A blank
+    cell is an error-level warning unless the column defines its meaning
+    (blank='NA' for the reference standard, where it means none existed)."""
     v = clean(v)
     if v is None:
+        if blank:
+            return {"r": blank, "low": None}
         warn("%s has no %s rating." % (name, field))
         return {"r": "NA", "low": None}
     m = QUALITY_RE.match(str(v))
@@ -548,6 +553,14 @@ def main(argv):
     log("Benchmark rows: %d   Study rows: %d" % (len(braw), len(sraw)))
     if recased:
         log("Age group values given an initial capital for display: %d" % recased)
+    # Empty cells: the workbook leaves not-applicable cells blank (earlier
+    # versions wrote NA or None). Two columns give a blank a meaning.
+    ref_blank = sum(1 for r in braw if clean(r.get("q_ref")) is None)
+    aud_blank = sum(1 for r in braw if not split_values(r.get("audiences")))
+    if ref_blank:
+        log("Reference standard quality left blank, read as NA (no reference standard): %d" % ref_blank)
+    if aud_blank:
+        log("Intended audience left blank, shown as 'Not applicable': %d" % aud_blank)
     log("Footnotes captured: %d (benchmarks), %d (studies)" % (len(bnotes), len(snotes)))
     log()
 
@@ -636,11 +649,13 @@ def main(argv):
         constructs = []
         for c in constructs_raw:
             c = TIE_RE.sub("", c).strip()
+            if re.search(r"\(tie\b", c, re.I):
+                warn("Benchmark '%s' has a construct with an unrecognized tie note: '%s'. Expected '(tie across evaluations)'." % (name, c))
             if c and c not in constructs:
                 constructs.append(c)
         q = {
             "input": parse_quality(r["q_input"], "input quality", name),
-            "ref": parse_quality(r["q_ref"], "reference standard quality", name),
+            "ref": parse_quality(r["q_ref"], "reference standard quality", name, blank="NA"),
             "scoring": parse_quality(r["q_scoring"], "scoring quality", name),
         }
         size = parse_size(r["size"])
@@ -666,7 +681,9 @@ def main(argv):
             "languages": split_values(r["languages"]),
             "populations": split_values(r["populations"]),
             "age_group": sentence_case(r["age_group"]),
-            "audiences": [("Not applicable" if a == "NA" else a) for a in split_values(r["audiences"])],
+            # A blank audience cell was "NA" (not applicable) in earlier
+            # workbooks; the README keeps NA as "not applicable".
+            "audiences": [("Not applicable" if a == "NA" else a) for a in split_values(r["audiences"])] or ["Not applicable"],
             "size": size,
             "size_bin": size_bin(size),
             "availability": split_values(r["availability"]),
@@ -981,7 +998,7 @@ def write_downloads(wb_path, benchmarks, studies, study_by_id, bench_by_id):
                 return d["r"] + (" (lowest %s)" % d["low"] if d["low"] else "")
             w.writerow([
                 b["name"], "Yes" if b["named"] else "No", b["purpose"],
-                J(b["constructs"]) + (" (tie across studies)" if b["construct_tie"] else ""),
+                J(b["constructs"]) + (" (tie across evaluations)" if b["construct_tie"] else ""),
                 J(b["conditions"]), b["n_studies"],
                 J("%s, %s" % (study_by_id[i]["label"], study_by_id[i]["title"]) for i in b["studies"]),
                 b["first_year"], b["last_year"], J(p["name"] for p in b["parents"]) or "None",

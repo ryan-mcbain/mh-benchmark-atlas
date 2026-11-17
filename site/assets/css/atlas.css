@@ -605,6 +605,9 @@ body.dr-open .drawer { transform: none; visibility: visible; transition: transfo
 .doc-toc a:hover { color: var(--ink); border-left-color: var(--rule-2); }
 .prose { min-width: 0; font-family: var(--serif); font-size: 19px; line-height: 1.62; color: var(--ink); }
 .prose > :not(.table-wrap):not(.gloss):not(.purposes) { max-width: 41rem; }
+/* File names such as "repository_tables_benchmarks_studies_nov17.xlsx" have
+   no spaces, so let them wrap rather than push the page sideways on phones. */
+.fname { overflow-wrap: anywhere; }
 .prose > .gloss, .prose > .purposes { max-width: 52rem; }
 .prose h2 { font-family: var(--serif); font-size: 29px; font-weight: 460; line-height: 1.2; letter-spacing: -0.01em; margin: 60px 0 14px; scroll-margin-top: 96px; }
 .prose h2:first-child { margin-top: 0; }

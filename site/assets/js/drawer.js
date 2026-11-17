@@ -173,7 +173,7 @@
     const wrap = h("div", { class: "dr-quality", role: "list", "aria-label": "Quality ratings" });
     for (const d of A.DIMS) {
       const q = b.q[d.key];
-      const low = q.low ? "Lowest rating in any study: " + q.low.toLowerCase() : null;
+      const low = q.low ? "Lowest rating in any evaluation: " + q.low.toLowerCase() : null;
       wrap.appendChild(
         h("div", { class: "dr-qitem", role: "listitem" },
           h("span", { class: "q q-lg " + A.qClass(q.r), "aria-hidden": "true" }),
@@ -225,12 +225,12 @@
     frag.appendChild(h("p", { class: "dr-lede" },
       h("a", { class: "val-link", href: filterHref(P, "purpose", b.purpose) }, b.purpose), ". ",
       b.constructs.map((c, i) => [i ? ", " : "", h("a", { class: "val-link", href: filterHref(P, "construct", c) }, c)]),
-      b.construct_tie ? " (studies split evenly)" : "", "."));
+      b.construct_tie ? " (evaluations split evenly)" : "", "."));
     frag.appendChild(h("p", { class: "dr-meta" },
       (b.named ? "Named benchmark" : "Unnamed item set") + ", used in " + A.countLabel(b.n_studies, "study", "studies") + (b.first_year ? ", " + (b.first_year === b.last_year ? b.first_year : b.first_year + " to " + b.last_year) : "") + "."));
 
     const refNote = b.q.ref.r === "NR"
-      ? "Reference standard quality not reported: this benchmark reuses an existing dataset, and " + (b.n_studies > 1 ? "the studies that used it" : "the study that used it") + " did not describe its labeling in enough detail to rate. This is a separate category, not a poor rating."
+      ? "Reference standard quality not reported: " + (b.n_studies > 1 ? "none of the studies that used it reported" : "the study that used it did not report") + " who produced the labels, what they were based on, or whether they were checked (more than half of the rating criteria were not reported). This is a separate category, not a poor rating."
       : b.q.ref.r === "NA"
         ? "No reference standard: this benchmark was rated as having no human or ground-truth reference standard, so this component has no rating."
         : null;
